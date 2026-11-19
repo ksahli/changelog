@@ -7,28 +7,32 @@
   <meta name="description" content="{% block description %}{{ config.description }}{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=UnifrakturMaguntia&display=swap">
   <link rel="stylesheet" href="{{ get_url(path='css/site.css', cachebust=true) }}">
   <script src="{{ get_url(path='js/edition.js', cachebust=true) }}" defer></script>
   <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}">
 </head>
-<body class="min-h-screen bg-paper font-sans text-ink antialiased">
-  <header class="mx-auto max-w-3xl px-4 pt-12 pb-8 text-center">
-    <a href="{{ get_url(path='/', lang=lang) }}" class="font-serif text-5xl font-semibold tracking-tight text-ink sm:text-6xl">{{ config.title }}</a>
-    <p class="mt-3 font-serif text-lg italic text-muted">{{ config.description }}</p>
-    <nav class="mt-6 flex items-center justify-center gap-6 border-y border-rule py-2.5 text-[11px] font-medium uppercase tracking-[0.2em] text-muted">
-      <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="transition-colors hover:text-accent">{{ trans(key="archive", lang=lang) }}</a>
-      <span class="text-faint">·</span>
-      <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="transition-colors hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
-    </nav>
+<body class="min-h-screen font-body text-ink antialiased">
+  <header class="mx-auto max-w-6xl px-4 pt-6">
+    <div class="flex flex-col items-center gap-1 border-b border-ink pb-2 sm:flex-row sm:justify-between">
+      <p class="text-sm italic text-muted">{{ config.description }}</p>
+      <nav class="smallcaps flex items-center gap-3 text-[15px] text-ink">
+        <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="hover:text-accent">{{ trans(key="archive", lang=lang) }}</a>
+        <span class="text-faint">·</span>
+        <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
+      </nav>
+    </div>
+    <a href="{{ get_url(path='/', lang=lang) }}" class="block py-3 text-center font-display text-[clamp(3.25rem,11vw,7rem)] leading-none text-ink sm:py-4">{{ config.title }}</a>
+    <div class="rule-oxford"></div>
   </header>
 
-  <main class="mx-auto max-w-3xl px-4 py-6">
+  <main class="mx-auto max-w-6xl px-4 pb-6">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="mx-auto max-w-3xl border-t border-rule px-4 pt-6 pb-12 text-center text-xs leading-relaxed text-faint">
-    {{ trans(key="footer", lang=lang) }}
+  <footer class="mx-auto max-w-6xl px-4 pb-12">
+    <div class="rule-oxford"></div>
+    <p class="mx-auto max-w-2xl pt-4 text-center text-xs italic leading-relaxed text-muted">{{ trans(key="footer", lang=lang) }}</p>
   </footer>
 </body>
 </html>
