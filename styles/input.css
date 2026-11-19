@@ -105,6 +105,14 @@
   .story-backlink { align-self: flex-start; font-size: 12px; font-style: italic; color: var(--muted); text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
   .story-backlink:hover { color: var(--accent); }
 
+  /* Weekly editorial: body copy with a drop cap, like the lead. */
+  .editorial p { font-size: 16px; line-height: 1.65; hyphens: auto; }
+  .editorial p + p { margin-top: 1rem; }
+  @media (min-width: 640px) { .editorial p { text-align: justify; } }
+  .editorial p:first-child::first-letter {
+    float: left; font-family: var(--font-serif); font-weight: 700; font-size: 4.4em; line-height: .8; margin: .07em .1em 0 0;
+  }
+
   /* Tag and section pages: same columns as "Everything else". */
   .term-stories { columns: 17rem 3; column-gap: 2.25rem; column-rule: 1px solid var(--rule); }
 

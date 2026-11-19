@@ -2,6 +2,15 @@
 
 {% block content %}
 {% set digests = get_section(path="digest/_index.md") %}
+{#- Point to a roundup published in the last week (pages are newest first). -#}
+{% set weekly = get_section(path="weekly/_index.md") %}
+{% if weekly.pages and now(timestamp=true) - (weekly.pages[0].date | date(format="%s") | int) < 8 * 86400 %}
+  {% set w = weekly.pages[0] %}
+  <a href="{{ w.permalink }}" class="mb-6 flex flex-wrap items-baseline justify-center gap-x-3 border-y border-ink py-2 text-center hover:text-accent">
+    <span class="smallcaps text-[15px] font-bold">{{ trans(key="weekly_banner", lang=lang) }}</span>
+    <span class="font-serif italic">{{ w.description }} →</span>
+  </a>
+{% endif %}
 {% if digests.pages %}
   {{<digest page={digests.pages[0]} heading_link={true} />}}
 {% else %}
