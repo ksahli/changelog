@@ -3,3 +3,6 @@ static/css/site.css
 bin/
 .venv/
 __pycache__/
+static/og/
+static/favicon-32.png
+static/apple-touch-icon.png

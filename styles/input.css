@@ -70,10 +70,19 @@
   .rule-oxford::before { content: ""; display: block; margin-top: 2px; border-top: 1px solid var(--ink); }
 
   /* Stories. One element, two looks: lead and column item. */
-  .story { break-inside: avoid; padding: .9rem 0 .25rem; }
+  .story { position: relative; break-inside: avoid; padding: .9rem 0 .25rem; scroll-margin-top: 1.5rem; }
+  .story:target { background: color-mix(in oklab, var(--accent) 9%, transparent); box-shadow: 0 0 0 .6rem color-mix(in oklab, var(--accent) 9%, transparent); }
+  .story-anchor { position: absolute; top: .85rem; right: 0; font-family: var(--font-serif); font-size: 15px; color: var(--faint); opacity: 0; transition: opacity .15s; }
+  .story:hover .story-anchor, .story:target .story-anchor, .story-anchor:focus-visible { opacity: 1; }
+  @media (hover: none) { .story-anchor { opacity: .7; } }
+  .story-anchor:hover { color: var(--accent); }
+  .story-anchor[data-state="copied"]::after {
+    content: attr(data-copied); position: absolute; right: 0; top: 1.4rem; white-space: nowrap;
+    padding: .15rem .45rem; background: var(--ink); color: var(--paper); font-size: 11px; font-style: italic;
+  }
   .story + .story { border-top: 1px solid var(--rule); }
   .story-head { display: flex; flex-direction: column; gap: .3rem; }
-  .story-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem; font-size: 13px; color: var(--muted); }
+  .story-meta { padding-right: 1.25rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem; font-size: 13px; color: var(--muted); }
   .story-meta > * + *::before { content: "·"; margin-right: .45rem; color: var(--faint); }
   .story-imp, .story-cat { font-family: var(--font-serif); font-variant: small-caps; text-transform: lowercase; letter-spacing: .12em; }
   .story-imp { font-weight: 700; }
@@ -108,7 +117,8 @@
   /* Lead */
   #lead .story { padding: 0; }
   #lead .story-head { gap: .7rem; }
-  #lead .story-meta { justify-content: center; font-size: 14px; }
+  #lead .story-meta { justify-content: center; padding-inline: 1.25rem; font-size: 14px; }
+  #lead .story-anchor { top: 0; }
   #lead .story-title { font-size: clamp(2rem, 4.6vw, 3.25rem); line-height: 1.04; text-align: center; letter-spacing: -.01em; }
   #lead .story-body { margin-top: 1rem; padding: 1.1rem 0 0; border-top: 1px solid var(--ink); gap: 1rem; font-size: 16px; line-height: 1.65; }
   #lead .story-summary::first-letter {

@@ -27,6 +27,7 @@
       <a class="story-cat" href="{{ get_taxonomy_url(kind='categories', name=category, lang=lang) }}">{{ label }}</a>
     </span>
     <span class="story-title">{{ item.title }}</span>
+    <a class="story-anchor" href="{{ permalink }}#{{ key }}" title="{{ trans(key='permalink', lang=lang) }}" aria-label="{{ trans(key='permalink', lang=lang) }}" data-copied="{{ trans(key='copied', lang=lang) }}">¶</a>
   </header>
   <div class="story-body">
     <p class="story-summary">{{ item.summary }}</p>

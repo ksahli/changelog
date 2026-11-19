@@ -43,5 +43,19 @@
     $("[data-no-results]").hidden = shown > 0;
   });
 
+  // ¶ copies the story's permalink; the link still navigates if the clipboard is unavailable.
+  root.addEventListener("click", async (e) => {
+    const a = e.target.closest(".story-anchor");
+    if (!a || !navigator.clipboard || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    try {
+      await navigator.clipboard.writeText(a.href);
+      a.dataset.state = "copied";
+      setTimeout(() => delete a.dataset.state, 1600);
+    } catch {
+      location.href = a.href;
+    }
+  });
+
   $("[data-search-wrap]").hidden = false;
 })();

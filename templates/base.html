@@ -5,6 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ config.title }}{% endblock %}</title>
   <meta name="description" content="{% block description %}{{ config.description }}{% endblock %}">
+  {#- Social cards: an edition (or weekly) page uses its own image from scripts/og.py. -#}
+  {%- set og_title = config.title %}{% set og_description = config.description %}{% set og_image = "og/default.png" %}{% set og_type = "website" %}
+  {%- if page %}
+    {%- set og_title = page.title %}{% set og_description = page.description | default(value=config.description) %}{% set og_type = "article" %}
+    {%- set og_image = "og/" ~ page.slug ~ ".png" %}
+  {%- elif term %}
+    {%- set og_title = "#" ~ term.name ~ " · " ~ config.title %}
+  {%- elif section and not section.path == "/" %}
+    {%- set og_title = section.title ~ " · " ~ config.title %}
+  {%- endif %}
+  <link rel="canonical" href="{{ current_url | default(value=config.base_url ~ '/') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ get_url(path='favicon-32.png') }}">
+  <link rel="apple-touch-icon" href="{{ get_url(path='apple-touch-icon.png') }}">
+  <meta property="og:site_name" content="{{ config.title }}">
+  <meta property="og:type" content="{{ og_type }}">
+  <meta property="og:title" content="{{ og_title }}">
+  <meta property="og:description" content="{{ og_description }}">
+  <meta property="og:url" content="{{ current_url | default(value=config.base_url ~ '/') }}">
+  <meta property="og:image" content="{{ get_url(path=og_image) }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=UnifrakturMaguntia&display=swap">
