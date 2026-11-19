@@ -6,27 +6,29 @@
 <h1 class="mb-8 text-center font-serif text-3xl font-medium text-ink sm:text-4xl">{{ section.title }}</h1>
 
 {% set pages = paginator.pages %}
+{% set locale = trans(key="locale", lang=lang) %}
+{% set month_format = trans(key="date_month", lang=lang) %}
 {% for page in pages %}
-  {% set month = page.date | date(format="%B %Y") %}
-  {% if loop.first or (pages[loop.index0 - 1].date | date(format="%B %Y")) != month %}
+  {% set month = page.date | date(format=month_format, locale=locale) %}
+  {% if loop.first or (pages[loop.index0 - 1].date | date(format=month_format, locale=locale)) != month %}
     <h2 class="mt-10 border-b border-ink/80 pb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-accent">{{ month }}</h2>
     <ul class="divide-y divide-rule">
   {% endif %}
   <li>
     <a href="{{ page.permalink }}" class="group flex items-baseline gap-5 py-3.5">
-      <span class="w-16 shrink-0 font-serif text-lg tabular-nums text-ink">{{ page.date | date(format="%a %-d") }}</span>
+      <span class="w-16 shrink-0 font-serif text-lg tabular-nums text-ink">{{ page.date | date(format=trans(key="date_day", lang=lang), locale=locale) }}</span>
       <span class="text-sm leading-relaxed text-muted transition-colors group-hover:text-accent">{{ page.description }}</span>
     </a>
   </li>
-  {% if loop.last or (pages[loop.index0 + 1].date | date(format="%B %Y")) != month %}
+  {% if loop.last or (pages[loop.index0 + 1].date | date(format=month_format, locale=locale)) != month %}
     </ul>
   {% endif %}
 {% endfor %}
 
 {% if paginator.number_pagers > 1 %}
 <nav class="mt-10 flex justify-between border-t border-rule pt-5 font-serif text-lg">
-  {% if paginator.previous %}<a href="{{ paginator.previous }}" class="text-muted transition-colors hover:text-accent">← Newer</a>{% else %}<span></span>{% endif %}
-  {% if paginator.next %}<a href="{{ paginator.next }}" class="text-muted transition-colors hover:text-accent">Older →</a>{% endif %}
+  {% if paginator.previous %}<a href="{{ paginator.previous }}" class="text-muted transition-colors hover:text-accent">{{ trans(key="newer", lang=lang) }}</a>{% else %}<span></span>{% endif %}
+  {% if paginator.next %}<a href="{{ paginator.next }}" class="text-muted transition-colors hover:text-accent">{{ trans(key="older", lang=lang) }}</a>{% endif %}
 </nav>
 {% endif %}
 {% endblock %}

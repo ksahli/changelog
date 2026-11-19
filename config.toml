@@ -15,3 +15,58 @@ smart_punctuation = true
 
 [extra]
 repo_url = ""
+
+# UI strings for the default language (English); French below.
+# `{items}`, `{candidates}` and `{sources}` are substituted in templates;
+# date_* values are UTS-35 patterns (localized via `locale`).
+[translations]
+locale = "en_US"
+date_long = "EEEE, MMMM d, y"
+date_short = "MMMM d"
+date_day = "EEE d"
+date_month = "MMMM y"
+archive = "Archive"
+feed = "Feed"
+other_lang = "Français"
+todays_edition = "Today's edition"
+the_edition = "The edition"
+stats = "{items} stories picked from {candidates} items across {sources} feeds"
+in_brief = "In brief"
+why_it_matters = "Why it matters —"
+source = "source"
+high = "High"
+medium = "Medium"
+low = "Low"
+newer = "← Newer"
+older = "Older →"
+no_digest = "No digest yet. The first one will show up after the next morning run."
+footer = "Generated each morning from public RSS feeds and summarized by Claude. Summaries can be wrong, so check the linked sources before you act on anything."
+
+[languages.fr]
+title = "Changelog"
+description = "Ce qui a changé dans le monde depuis hier"
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+
+[languages.fr.translations]
+locale = "fr_FR"
+date_long = "EEEE d MMMM y"
+date_short = "d MMMM"
+date_day = "EEE d"
+date_month = "MMMM y"
+archive = "Archives"
+feed = "Flux"
+other_lang = "English"
+todays_edition = "L'édition du jour"
+the_edition = "L'édition"
+stats = "{items} sujets retenus parmi {candidates} articles de {sources} flux"
+in_brief = "En bref"
+why_it_matters = "Pourquoi c'est important —"
+source = "source"
+high = "Élevée"
+medium = "Moyenne"
+low = "Faible"
+newer = "← Plus récent"
+older = "Plus ancien →"
+no_digest = "Pas encore de revue. La première paraîtra après la prochaine exécution matinale."
+footer = "Générée chaque matin à partir de flux RSS publics, résumée puis traduite par Claude. Les résumés peuvent contenir des erreurs : vérifiez les sources liées avant d'agir."

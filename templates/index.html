@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% set digests = get_section(path="digest/_index.md") %}
+{% if lang == config.default_language %}{% set digests = get_section(path="digest/_index.md") %}{% else %}{% set digests = get_section(path="digest/_index." ~ lang ~ ".md") %}{% endif %}
 {% if digests.pages %}
   {{<digest page={digests.pages[0]} heading_link={true} />}}
 {% else %}
-  <p class="text-center font-serif text-lg italic text-muted">No digest yet. The first one will show up after the next morning run.</p>
+  <p class="text-center font-serif text-lg italic text-muted">{{ trans(key="no_digest", lang=lang) }}</p>
 {% endif %}
 {% endblock %}

@@ -9,16 +9,25 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500&display=swap">
   <link rel="stylesheet" href="{{ get_url(path='css/site.css', cachebust=true) }}">
-  <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', trailing_slash=false) }}">
+  <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}">
+  {%- if page %}{% set translations = page.translations %}{% elif section %}{% set translations = section.translations %}{% else %}{% set translations = [] %}{% endif %}
+  {%- for t in translations %}
+  <link rel="alternate" hreflang="{{ t.lang }}" href="{{ t.permalink }}">
+  {%- endfor %}
 </head>
 <body class="min-h-screen bg-paper font-sans text-ink antialiased">
   <header class="mx-auto max-w-3xl px-4 pt-12 pb-8 text-center">
-    <a href="{{ get_url(path='/') }}" class="font-serif text-5xl font-semibold tracking-tight text-ink sm:text-6xl">{{ config.title }}</a>
+    <a href="{{ get_url(path='/', lang=lang) }}" class="font-serif text-5xl font-semibold tracking-tight text-ink sm:text-6xl">{{ config.title }}</a>
     <p class="mt-3 font-serif text-lg italic text-muted">{{ config.description }}</p>
     <nav class="mt-6 flex items-center justify-center gap-6 border-y border-rule py-2.5 text-[11px] font-medium uppercase tracking-[0.2em] text-muted">
-      <a href="{{ get_url(path='@/digest/_index.md') }}" class="transition-colors hover:text-accent">Archive</a>
+      <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="transition-colors hover:text-accent">{{ trans(key="archive", lang=lang) }}</a>
       <span class="text-faint">·</span>
-      <a href="{{ get_url(path='atom.xml', trailing_slash=false) }}" class="transition-colors hover:text-accent">Feed</a>
+      <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="transition-colors hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
+      <span class="text-faint">·</span>
+      {%- if lang == "fr" %}{% set other = config.default_language %}{% else %}{% set other = "fr" %}{% endif %}
+      {%- set other_url = get_url(path='/', lang=other) %}
+      {%- for t in translations %}{% if t.lang == other %}{% set_global other_url = t.permalink %}{% endif %}{% endfor %}
+      <a href="{{ other_url }}" hreflang="{{ other }}" lang="{{ other }}" class="transition-colors hover:text-accent">{{ trans(key="other_lang", lang=lang) }}</a>
     </nav>
   </header>
 
@@ -27,7 +36,7 @@
   </main>
 
   <footer class="mx-auto max-w-3xl border-t border-rule px-4 pt-6 pb-12 text-center text-xs leading-relaxed text-faint">
-    Generated each morning from public RSS feeds and summarized by Claude. Summaries can be wrong, so check the linked sources before you act on anything.
+    {{ trans(key="footer", lang=lang) }}
   </footer>
 </body>
 </html>

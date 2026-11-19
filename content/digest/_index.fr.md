@@ -1,0 +1,7 @@
++++
+title = "Archives"
+sort_by = "date"
+paginate_by = 60
+template = "section.html"
+page_template = "page.html"
++++
