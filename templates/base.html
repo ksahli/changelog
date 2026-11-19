@@ -24,10 +24,18 @@
       <span class="text-faint">·</span>
       <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="transition-colors hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
       <span class="text-faint">·</span>
-      {%- if lang == "fr" %}{% set other = config.default_language %}{% else %}{% set other = "fr" %}{% endif %}
-      {%- set other_url = get_url(path='/', lang=other) %}
-      {%- for t in translations %}{% if t.lang == other %}{% set_global other_url = t.permalink %}{% endif %}{% endfor %}
-      <a href="{{ other_url }}" hreflang="{{ other }}" lang="{{ other }}" class="transition-colors hover:text-accent">{{ trans(key="other_lang", lang=lang) }}</a>
+      {#- Each language links to this page's translation, or to that language's home page. #}
+      <span class="flex gap-3">
+      {%- for code in config.extra.languages %}
+        {%- if code == lang %}
+        <span aria-current="true" class="text-ink underline decoration-accent underline-offset-4">{{ code }}</span>
+        {%- else %}
+        {%- set_global lang_url = get_url(path='/', lang=code) %}
+        {%- for t in translations %}{% if t.lang == code %}{% set_global lang_url = t.permalink %}{% endif %}{% endfor %}
+        <a href="{{ lang_url }}" hreflang="{{ code }}" lang="{{ code }}" class="transition-colors hover:text-accent">{{ code }}</a>
+        {%- endif %}
+      {%- endfor %}
+      </span>
     </nav>
   </header>
 

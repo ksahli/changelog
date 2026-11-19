@@ -2,9 +2,10 @@
 """Build today's tech digest: fetch RSS feeds -> ask Claude -> write a Zola page.
 
 Usage:
-    python scripts/digest.py [--force] [--dry-run] [--translate-only] [--date YYYY-MM-DD]
+    python scripts/digest.py [--force] [--dry-run] [--translate-only [--lang fr ...]] [--date YYYY-MM-DD]
 
-Writes content/digest/<date>.md (English) and <date>.fr.md (French translation).
+Writes content/digest/<date>.md (English) plus one <date>.<lang>.md translation
+per language in TRANSLATIONS (French, German).
 
 Env:
     ANTHROPIC_API_KEY   required (except with --fetch-only)
@@ -49,18 +50,30 @@ CATEGORY_LABELS = {
     "tech": "Tech & AI",
 }
 
-CATEGORY_LABELS_FR = {
-    "sec": "Sécurité",
-    "dev": "Dev & langages",
-    "ops": "Ops & cloud",
-    "tech": "Tech & IA",
+# Languages the English digest is translated into. Dates are formatted here
+# rather than with the system locale so CI needs no extra locales.
+TRANSLATIONS = {
+    "fr": {
+        "name": "French",
+        "categories": {"sec": "Sécurité", "dev": "Dev & langages", "ops": "Ops & cloud", "tech": "Tech & IA"},
+        "days": ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"],
+        "months": ["janvier", "février", "mars", "avril", "mai", "juin",
+                   "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
+        "title": "Revue tech — {day} {d} {month} {y}",
+        "fallback": "Revue tech quotidienne",
+        "keep": '"patch", "release", "cloud", "container"',
+    },
+    "de": {
+        "name": "German",
+        "categories": {"sec": "Sicherheit", "dev": "Dev & Sprachen", "ops": "Ops & Cloud", "tech": "Tech & KI"},
+        "days": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+        "months": ["Januar", "Februar", "März", "April", "Mai", "Juni",
+                   "Juli", "August", "September", "Oktober", "November", "Dezember"],
+        "title": "Tech-Digest — {day}, {d}. {month} {y}",
+        "fallback": "Täglicher Tech-Digest",
+        "keep": '"Patch", "Release", "Cloud", "Container"',
+    },
 }
-
-FR_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
-FR_MONTHS = [
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-]
 
 TRACKING_PARAMS = re.compile(r"^(utm_|fbclid$|gclid$|mc_|ref$|source$)")
 
@@ -320,16 +333,16 @@ def validate(digest: dict, candidates: list[dict]) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# French translation (text fields only, so links can't be altered)
+# Translations (text fields only, so links can't be altered)
 # ---------------------------------------------------------------------------
 
 TRANSLATE_PROMPT = """\
-You translate a daily tech briefing for software engineers from English into French. \
-Write natural, concise French as a French tech journalist would. Keep product and \
+You translate a daily tech briefing for software engineers from English into {name}. \
+Write natural, concise {name} as a {name} tech journalist would. Keep product and \
 project names, CVE IDs, version numbers, code identifiers, quoted vulnerability \
-nicknames and English tech terms that French engineers commonly use (e.g. "patch", \
-"release", "cloud", "container") unchanged. Translate every string; keep the same \
-number of entries in the same order and do not add or drop information.
+nicknames and English tech terms that {name}-speaking engineers commonly use \
+(e.g. {keep}) unchanged. Translate every string; keep the same number of entries \
+in the same order and do not add or drop information.
 """
 
 TEXT_FIELDS = ("title", "summary", "why_it_matters")
@@ -345,29 +358,30 @@ TRANSLATION_SCHEMA = _obj(
 )
 
 
-def translate(digest: dict) -> dict:
-    """Return a French copy of `digest`; only the text fields are sent to Claude."""
+def translate(digest: dict, lang: str) -> dict:
+    """Return a copy of `digest` in `lang`; only the text fields are sent to Claude."""
+    spec = TRANSLATIONS[lang]
     items = [item for section in digest["sections"] for item in section["items"]]
     source = {
         "tldr": digest["tldr"],
         "items": [{field: item[field] for field in TEXT_FIELDS} for item in items],
     }
     result = call_claude(
-        TRANSLATE_PROMPT,
+        TRANSLATE_PROMPT.format(name=spec["name"], keep=spec["keep"]),
         TRANSLATION_SCHEMA,
-        "Translate this JSON into French:\n\n" + json.dumps(source, ensure_ascii=False),
+        f"Translate this JSON into {spec['name']}:\n\n" + json.dumps(source, ensure_ascii=False),
     )
     if len(result["tldr"]) != len(source["tldr"]) or len(result["items"]) != len(items):
         raise RuntimeError("translation does not match the English digest's structure")
 
-    french = copy.deepcopy(digest)
-    french["tldr"] = result["tldr"]
-    fr_items = iter(result["items"])
-    for section in french["sections"]:
-        section["label"] = CATEGORY_LABELS_FR[section["category"]]
+    translated = copy.deepcopy(digest)
+    translated["tldr"] = result["tldr"]
+    tr_items = iter(result["items"])
+    for section in translated["sections"]:
+        section["label"] = spec["categories"][section["category"]]
         for item in section["items"]:
-            item.update({field: value for field, value in next(fr_items).items() if field in TEXT_FIELDS})
-    return french
+            item.update({field: value for field, value in next(tr_items).items() if field in TEXT_FIELDS})
+    return translated
 
 
 # ---------------------------------------------------------------------------
@@ -381,9 +395,12 @@ def page_path(today: date, lang: str = "en") -> Path:
 
 def render_page(digest: dict, today: date, stats: dict, model: str = MODEL, lang: str = "en") -> str:
     tldr = digest["tldr"]
-    if lang == "fr":
-        long_date = f"{FR_DAYS[today.weekday()]} {today.day} {FR_MONTHS[today.month - 1]} {today.year}"
-        title, fallback = f"Revue tech — {long_date}", "Revue tech quotidienne"
+    if lang in TRANSLATIONS:
+        spec = TRANSLATIONS[lang]
+        title = spec["title"].format(
+            day=spec["days"][today.weekday()], d=today.day, month=spec["months"][today.month - 1], y=today.year
+        )
+        fallback = spec["fallback"]
     else:
         title, fallback = f"Tech digest — {today:%A, %B} {today.day}, {today.year}", "Daily tech digest"
     front = {
@@ -392,22 +409,28 @@ def render_page(digest: dict, today: date, stats: dict, model: str = MODEL, lang
         "description": tldr[0] if tldr else fallback,
         "extra": {"tldr": tldr, "sections": digest["sections"], "stats": stats, "model": model},
     }
+    if lang == "en":
+        # English is served at the site root; /en/... redirects there.
+        front["aliases"] = [f"/en/digest/{today}/"]
     body = "\n".join(f"- {line}" for line in tldr)
     return f"---\n{json.dumps(front, ensure_ascii=False, indent=1)}\n---\n\n{body}\n"
 
 
-def write_french(digest: dict, today: date, stats: dict, model: str = MODEL) -> bool:
-    """Write <date>.fr.md. A failed translation is logged, never fatal: English stays published."""
-    log("Translating into French…")
-    try:
-        french = translate(digest)
-    except Exception as exc:  # noqa: BLE001
-        log(f"  ! French translation failed: {exc}")
-        return False
-    path = page_path(today, "fr")
-    path.write_text(render_page(french, today, stats, model, lang="fr"), encoding="utf-8")
-    log(f"Wrote {path.relative_to(ROOT)}")
-    return True
+def write_translations(digest: dict, today: date, stats: dict, langs: list[str], model: str = MODEL) -> bool:
+    """Write <date>.<lang>.md for each lang. Failures are logged, never fatal: English stays published."""
+    ok = True
+    for lang in langs:
+        log(f"Translating into {TRANSLATIONS[lang]['name']}…")
+        try:
+            translated = translate(digest, lang)
+        except Exception as exc:  # noqa: BLE001
+            log(f"  ! {lang} translation failed: {exc}")
+            ok = False
+            continue
+        path = page_path(today, lang)
+        path.write_text(render_page(translated, today, stats, model, lang=lang), encoding="utf-8")
+        log(f"Wrote {path.relative_to(ROOT)}")
+    return ok
 
 
 def main() -> int:
@@ -415,20 +438,22 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="overwrite today's digest if it exists")
     parser.add_argument("--dry-run", action="store_true", help="print the digest instead of writing it")
     parser.add_argument("--fetch-only", action="store_true", help="only fetch feeds and print candidates")
-    parser.add_argument("--translate-only", action="store_true", help="(re)write the French page from the existing English one")
+    parser.add_argument("--translate-only", action="store_true", help="(re)write translated pages from the existing English one")
+    parser.add_argument("--lang", action="append", choices=list(TRANSLATIONS), help="with --translate-only: only these languages (repeatable)")
     parser.add_argument("--date", type=date.fromisoformat, default=datetime.now(timezone.utc).date())
     args = parser.parse_args()
 
     today: date = args.date
     out_path = page_path(today)
-    fr_path = page_path(today, "fr")
-    resume = out_path.exists() and not fr_path.exists() and not (args.force or args.dry_run or args.fetch_only)
+    missing = [lang for lang in TRANSLATIONS if not page_path(today, lang).exists()]
+    resume = out_path.exists() and missing and not (args.force or args.dry_run or args.fetch_only)
     if args.translate_only or resume:
         if not out_path.exists():
             log(f"{out_path.relative_to(ROOT)} does not exist; nothing to translate")
             return 1
+        langs = (args.lang or list(TRANSLATIONS)) if args.translate_only else missing
         extra = read_front_matter(out_path)["extra"]
-        return 0 if write_french(extra, today, extra.get("stats", {}), extra.get("model", MODEL)) else 1
+        return 0 if write_translations(extra, today, extra.get("stats", {}), langs, extra.get("model", MODEL)) else 1
     if out_path.exists() and not (args.force or args.dry_run or args.fetch_only):
         log(f"{out_path.relative_to(ROOT)} already exists; use --force to regenerate")
         return 0
@@ -449,7 +474,8 @@ def main() -> int:
 
     digest = validate(ask_claude(candidates, today), candidates)
     if args.dry_run:
-        print(json.dumps({"en": digest, "fr": translate(digest)}, ensure_ascii=False, indent=2))
+        translations = {lang: translate(digest, lang) for lang in TRANSLATIONS}
+        print(json.dumps({"en": digest, **translations}, ensure_ascii=False, indent=2))
         return 0
 
     n_items = sum(len(s["items"]) for s in digest["sections"])
@@ -457,7 +483,7 @@ def main() -> int:
     DIGEST_DIR.mkdir(parents=True, exist_ok=True)
     out_path.write_text(render_page(digest, today, stats), encoding="utf-8")
     log(f"Wrote {out_path.relative_to(ROOT)}")
-    write_french(digest, today, stats)
+    write_translations(digest, today, stats, list(TRANSLATIONS))
     return 0
 
 

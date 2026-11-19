@@ -15,6 +15,8 @@ smart_punctuation = true
 
 [extra]
 repo_url = ""
+# Order of the header language switcher; the first one is served at the root.
+languages = ["en", "fr", "de"]
 
 # UI strings for the default language (English); French below.
 # `{items}`, `{candidates}` and `{sources}` are substituted in templates;
@@ -27,7 +29,6 @@ date_day = "EEE d"
 date_month = "MMMM y"
 archive = "Archive"
 feed = "Feed"
-other_lang = "Français"
 todays_edition = "Today's edition"
 the_edition = "The edition"
 stats = "{items} stories picked from {candidates} items across {sources} feeds"
@@ -56,7 +57,6 @@ date_day = "EEE d"
 date_month = "MMMM y"
 archive = "Archives"
 feed = "Flux"
-other_lang = "English"
 todays_edition = "L'édition du jour"
 the_edition = "L'édition"
 stats = "{items} sujets retenus parmi {candidates} articles de {sources} flux"
@@ -70,3 +70,31 @@ newer = "← Plus récent"
 older = "Plus ancien →"
 no_digest = "Pas encore de revue. La première paraîtra après la prochaine exécution matinale."
 footer = "Générée chaque matin à partir de flux RSS publics, résumée puis traduite par Claude. Les résumés peuvent contenir des erreurs : vérifiez les sources liées avant d'agir."
+
+[languages.de]
+title = "Changelog"
+description = "Was sich seit gestern in der Welt verändert hat"
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+
+[languages.de.translations]
+locale = "de_DE"
+date_long = "EEEE, d. MMMM y"
+date_short = "d. MMMM"
+date_day = "EEE d."
+date_month = "MMMM y"
+archive = "Archiv"
+feed = "Feed"
+todays_edition = "Die heutige Ausgabe"
+the_edition = "Die Ausgabe"
+stats = "{items} Meldungen ausgewählt aus {candidates} Beiträgen von {sources} Feeds"
+in_brief = "Kurz gefasst"
+why_it_matters = "Warum es wichtig ist —"
+source = "Quelle"
+high = "Hoch"
+medium = "Mittel"
+low = "Niedrig"
+newer = "← Neuer"
+older = "Älter →"
+no_digest = "Noch kein Digest. Der erste erscheint nach dem nächsten Morgenlauf."
+footer = "Jeden Morgen aus öffentlichen RSS-Feeds erstellt, von Claude zusammengefasst und übersetzt. Zusammenfassungen können Fehler enthalten – prüfen Sie die verlinkten Quellen, bevor Sie handeln."

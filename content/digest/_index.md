@@ -1,5 +1,6 @@
 +++
 title = "Archive"
+aliases = ["/en/digest/"]
 sort_by = "date"
 paginate_by = 60
 template = "section.html"
