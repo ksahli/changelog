@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500&display=swap">
   <link rel="stylesheet" href="{{ get_url(path='css/site.css', cachebust=true) }}">
+  <script src="{{ get_url(path='js/edition.js', cachebust=true) }}" defer></script>
   <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}">
   {%- if page %}{% set translations = page.translations %}{% elif section %}{% set translations = section.translations %}{% else %}{% set translations = [] %}{% endif %}
   {%- for t in translations %}

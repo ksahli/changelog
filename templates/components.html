@@ -1,10 +1,10 @@
 {% component importance_badge(level, lang) %}
   {%- if level == "high" -%}
-    <span class="shrink-0 pt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-high">{{ trans(key="high", lang=lang) }}</span>
+    <span class="story-imp text-high"><span class="story-dot bg-high"></span><span class="story-imp-label">{{ trans(key="high", lang=lang) }}</span></span>
   {%- elif level == "medium" -%}
-    <span class="shrink-0 pt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-medium">{{ trans(key="medium", lang=lang) }}</span>
+    <span class="story-imp text-medium"><span class="story-dot bg-medium"></span><span class="story-imp-label">{{ trans(key="medium", lang=lang) }}</span></span>
   {%- else -%}
-    <span class="shrink-0 pt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-low">{{ trans(key="low", lang=lang) }}</span>
+    <span class="story-imp text-low"><span class="story-dot bg-low"></span><span class="story-imp-label">{{ trans(key="low", lang=lang) }}</span></span>
   {%- endif -%}
 {% endcomponent importance_badge %}
 
@@ -16,61 +16,144 @@
   {%- endif -%}
 {% endcomponent category_dot %}
 
-{% component item_card(item, lang) %}
-<article class="py-6">
-  <div class="flex items-start justify-between gap-4">
-    <h3 class="font-serif text-xl font-semibold leading-snug text-ink">{{ item.title }}</h3>
-    {{<importance_badge level={item.importance} lang={lang} />}}
+{#- One story. Rendered as <details> so it expands without JS; edition.js moves it
+    into the lead slot, "For your stack" or "Everything else". -#}
+{% component item_card(item, lang, key, label, order, lead=false) %}
+<details class="story" id="{{ key }}" data-key="{{ key }}" data-order="{{ order }}" data-importance="{{ item.importance }}" data-tags="{{ item.tags | join(sep=' ') }}"{% if lead %} open{% endif %}>
+  <summary class="story-head">
+    <span class="story-meta">
+      {{<importance_badge level={item.importance} lang={lang} />}}
+      <span class="story-cat">{{ label }}</span>
+      <span class="story-reason" data-reason></span>
+    </span>
+    <span class="story-title">{{ item.title }}</span>
+    <button type="button" class="story-save" data-save hidden aria-pressed="false" aria-label="{{ trans(key='save', lang=lang) }}">☆</button>
+  </summary>
+  <div class="story-body">
+    <p class="story-summary">{{ item.summary }}</p>
+    <p class="story-why"><span class="story-why-label">{{ trans(key="why_it_matters", lang=lang) }}</span> {{ item.why_it_matters }}</p>
+    <div class="story-foot">
+      <span class="story-count tabular-nums" data-count="{{ item.links | length }}"></span>
+      <span class="story-links">
+        {%- for link in item.links %}
+        <a href="{{ link.url }}" rel="noopener" target="_blank" data-source="{{ link.source or trans(key='source', lang=lang) }}">{{ link.source or trans(key="source", lang=lang) }} ↗</a>
+        {%- endfor %}
+      </span>
+      <span class="story-tags">{% for tag in item.tags %}<span>#{{ tag }}</span>{% endfor %}</span>
+      <span class="ml-auto flex gap-3">
+        <button type="button" class="story-action" data-save-text hidden>{{ trans(key="save", lang=lang) }}</button>
+        <button type="button" class="story-action" data-read hidden>{{ trans(key="mark_read", lang=lang) }}</button>
+      </span>
+    </div>
   </div>
-  <p class="mt-2 text-[15px] leading-relaxed text-ink/85">{{ item.summary }}</p>
-  <p class="mt-2 text-[15px] leading-relaxed text-muted">
-    <span class="font-serif italic text-ink">{{ trans(key="why_it_matters", lang=lang) }}</span> {{ item.why_it_matters }}
-  </p>
-  <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-    {% for link in item.links %}
-      <a href="{{ link.url }}" rel="noopener" target="_blank" class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:text-accent hover:decoration-accent">{{ link.source or trans(key="source", lang=lang) }} ↗</a>
-    {% endfor %}
-    {% for tag in item.tags %}
-      <span class="text-faint">#{{ tag }}</span>
-    {% endfor %}
-  </div>
-</article>
+</details>
 {% endcomponent item_card %}
 
 {% component digest(page, heading_link=false) %}
 {% set lang = page.lang %}
 {% set locale = trans(key="locale", lang=lang) %}
-<header class="mb-10 text-center">
+
+{#- Default lead: the first high-importance story. edition.js may promote one from the reader's stack. -#}
+{% set_global lead_key = "" %}
+{% for section in page.extra.sections %}{% set cat = section.category %}{% for item in section.items %}
+  {% if lead_key == "" and item.importance == "high" %}{% set_global lead_key = page.slug ~ "-" ~ cat ~ "-" ~ loop.index %}{% endif %}
+{% endfor %}{% endfor %}
+
+<div data-edition
+  data-t-summary="{{ trans(key='stack_summary', lang=lang) }}"
+  data-t-summary-empty="{{ trans(key='stack_summary_empty', lang=lang) }}"
+  data-t-results="{{ trans(key='results', lang=lang) }}"
+  data-t-sources="{{ trans(key='sources', lang=lang) }}"
+  data-t-source-one="{{ trans(key='source_one', lang=lang) }}"
+  data-t-save="{{ trans(key='save', lang=lang) }}"
+  data-t-saved="{{ trans(key='saved', lang=lang) }}"
+  data-t-mark-read="{{ trans(key='mark_read', lang=lang) }}"
+  data-t-read="{{ trans(key='read', lang=lang) }}"
+  data-t-in-stack="{{ trans(key='in_your_stack', lang=lang) }}"
+  data-t-top-story="{{ trans(key='top_story', lang=lang) }}">
+
+<header class="mb-8 flex flex-col items-center gap-3 border-b border-ink/80 pb-6 text-center">
   <p class="text-[11px] font-medium uppercase tracking-[0.25em] text-accent">{{ page.date | date(format=trans(key="date_long", lang=lang), locale=locale) }}</p>
-  <h1 class="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+  <h1 class="font-serif text-3xl font-medium text-ink sm:text-4xl">
     {% if heading_link %}<a href="{{ page.permalink }}" class="transition-colors hover:text-accent">{{ trans(key="todays_edition", lang=lang) }}</a>{% else %}{{ trans(key="the_edition", lang=lang) }}{% endif %}
   </h1>
   {% if page.extra.stats %}
-  <p class="mt-2 text-xs text-faint">{{ trans(key="stats", lang=lang) | replace(from="{items}", to=page.extra.stats.items ~ "") | replace(from="{candidates}", to=page.extra.stats.candidates ~ "") | replace(from="{sources}", to=page.extra.stats.sources ~ "") }}</p>
+  <p class="text-sm text-muted" data-summary>{{ trans(key="stats", lang=lang) | replace(from="{items}", to=page.extra.stats.items ~ "") | replace(from="{candidates}", to=page.extra.stats.candidates ~ "") | replace(from="{sources}", to=page.extra.stats.sources ~ "") }}</p>
   {% endif %}
+  <label class="mt-1 flex w-full max-w-sm items-baseline gap-3 border-b border-faint/60 pb-1.5" data-search-wrap hidden>
+    <span class="sr-only">{{ trans(key="search", lang=lang) }}</span>
+    <input type="search" data-search placeholder="{{ trans(key='search_placeholder', lang=lang) }}" class="w-full bg-transparent text-center text-sm text-ink placeholder:text-faint focus:outline-none">
+    <span class="shrink-0 text-xs tabular-nums text-faint" data-results></span>
+  </label>
 </header>
 
-{% if page.extra.tldr %}
-<section class="mb-12 border-l-2 border-accent bg-surface py-5 pr-5 pl-6">
-  <h2 class="text-[11px] font-medium uppercase tracking-[0.25em] text-accent">{{ trans(key="in_brief", lang=lang) }}</h2>
-  <ul class="mt-3 space-y-2 font-serif text-lg leading-snug text-ink">
-    {% for line in page.extra.tldr %}<li>{{ line }}</li>{% endfor %}
-  </ul>
+<section id="lead" class="mb-8">
+{% set_global order = 0 %}
+{% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
+  {% set_global order = order + 1 %}
+  {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} order={order} lead={true} />}}{% endif %}
+{% endfor %}{% endfor %}
+</section>
+
+{#- Patch checklist: high-importance security stories, labelled by their first tag. -#}
+{% set_global has_patch = false %}
+{% for section in page.extra.sections %}{% if section.category == "sec" %}{% for item in section.items %}{% if item.importance == "high" %}{% set_global has_patch = true %}{% endif %}{% endfor %}{% endif %}{% endfor %}
+{% if has_patch %}
+<section class="mb-10 flex flex-col gap-3 border-y border-rule py-4">
+  <h2 class="text-[11px] font-medium uppercase tracking-[0.25em] text-ink">{{ trans(key="also_patch", lang=lang) }}</h2>
+  <div class="flex flex-wrap gap-1.5">
+  {% for section in page.extra.sections %}{% if section.category == "sec" %}{% set cat = section.category %}{% for item in section.items %}{% if item.importance == "high" and item.tags %}
+    <a href="#{{ page.slug ~ '-' ~ cat ~ '-' ~ loop.index }}" class="patch-chip" data-patch="{{ page.slug ~ '-' ~ cat ~ '-' ~ loop.index }}" data-tags="{{ item.tags | join(sep=' ') }}" title="{{ item.title }}">{{ item.tags[0] }}</a>
+  {% endif %}{% endfor %}{% endif %}{% endfor %}
+  </div>
 </section>
 {% endif %}
 
-{% for section in page.extra.sections %}
-<section class="mb-12" id="{{ section.category }}">
-  <h2 class="flex items-center gap-3 border-b border-ink/80 pb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-ink">
-    {{<category_dot category={section.category} />}}
-    {{ section.label }}
-    <span class="ml-auto font-normal tabular-nums text-faint">{{ section.items | length }}</span>
-  </h2>
-  <div class="divide-y divide-rule">
-    {% for item in section.items %}{{<item_card item={item} lang={lang} />}}{% endfor %}
+<section class="mb-10" data-for-you-wrap hidden>
+  <div class="mb-3 flex items-baseline justify-between gap-4">
+    <h2 class="font-serif text-2xl font-semibold text-ink">{{ trans(key="for_your_stack", lang=lang) }}</h2>
+    <span class="text-right font-mono text-xs text-muted" data-stack-label></span>
+  </div>
+  <div id="for-you" class="grid gap-3 sm:grid-cols-2"></div>
+</section>
+
+<section class="mb-10">
+  <h2 class="mb-2 font-serif text-2xl font-semibold text-ink" data-rest-heading>{{ trans(key="everything_else", lang=lang) }}</h2>
+  <div id="stories">
+  {% set_global order = 0 %}
+  {% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
+    {% set_global order = order + 1 %}
+    {% set key = page.slug ~ "-" ~ cat ~ "-" ~ loop.index %}
+    {% if key != lead_key %}{{<item_card item={item} lang={lang} key={key} label={label} order={order} />}}{% endif %}
+  {% endfor %}{% endfor %}
+  </div>
+  <p class="py-4 text-sm text-muted" data-no-results hidden>{{ trans(key="no_results", lang=lang) }}</p>
+</section>
+
+{#- Last seven editions; dot size = number of stories. -#}
+{% set digests = get_section(path=page.ancestors | last) %}
+<section class="mb-8 grid gap-8 border-t border-ink/80 pt-6 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+  <div class="flex flex-col gap-3">
+    <h2 class="text-[11px] font-medium uppercase tracking-[0.25em] text-ink">{{ trans(key="past_editions", lang=lang) }}</h2>
+    <div class="flex flex-row-reverse justify-between gap-1">
+    {% for p in digests.pages %}{% if loop.index <= 7 %}
+      {% set_global n = 0 %}
+      {% for s in p.extra.sections %}{% set_global n = n + (s.items | length) %}{% endfor %}
+      <a href="{{ p.permalink }}" class="edition-day{% if p.permalink == page.permalink %} is-current{% endif %}" style="--n: {{ n }}" title="{{ n }}">
+        <span class="text-[10px] uppercase tracking-wider text-muted">{{ p.date | date(format="EEE", locale=locale) }}</span>
+        <span class="edition-dot"></span>
+        <span class="text-xs tabular-nums">{{ p.date | date(format="d", locale=locale) }}</span>
+      </a>
+    {% endif %}{% endfor %}
+    </div>
+    <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="text-xs text-muted underline decoration-rule underline-offset-4 hover:text-accent">{{ trans(key="archive", lang=lang) }} →</a>
+  </div>
+  <div class="flex flex-col gap-3" data-stack-panel hidden>
+    <h2 class="text-[11px] font-medium uppercase tracking-[0.25em] text-ink">{{ trans(key="your_stack", lang=lang) }}</h2>
+    <p class="text-xs text-muted">{{ trans(key="your_stack_hint", lang=lang) }}</p>
+    <div class="flex flex-wrap gap-1.5" data-stack-chips></div>
   </div>
 </section>
-{% endfor %}
 
 <nav class="mt-12 flex justify-between border-t border-rule pt-5 font-serif text-lg">
   {# with sort_by = "date", `higher` is the older digest and `lower` the newer one #}
@@ -81,4 +164,5 @@
     <a href="{{ page.lower.permalink }}" class="text-muted transition-colors hover:text-accent">{{ page.lower.date | date(format=trans(key="date_short", lang=lang), locale=locale) }} →</a>
   {% endif %}
 </nav>
+</div>
 {% endcomponent digest %}
