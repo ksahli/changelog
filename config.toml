@@ -18,7 +18,7 @@ repo_url = ""
 
 # UI strings, read by the templates with trans().
 # `{items}`, `{candidates}` and `{sources}` are substituted in templates;
-# `{n}`, `{mine}`, `{total}` and `{high}` are substituted by static/js/edition.js;
+# `{n}` is substituted by static/js/edition.js;
 # date_* values are UTS-35 patterns (localized via `locale`).
 [translations]
 locale = "en_US"
@@ -45,20 +45,8 @@ search = "Search"
 search_placeholder = "Search this edition, or try #rce"
 results = "{n} results"
 no_results = "No stories match."
-also_patch = "Also patch today"
-for_your_stack = "For your stack"
 everything_else = "Everything else"
 past_editions = "Past editions"
-your_stack = "Your stack"
-your_stack_hint = "Follow the tags you care about. Saved in this browser only."
-stack_summary = "{mine} of {total} stories touch your stack, {high} of them high priority."
-stack_summary_empty = "Follow a few tags below to get a front page built for your stack."
-in_your_stack = "in your stack"
-top_story = "top story"
 sources = "{n} sources"
 source_one = "1 source"
-save = "Save"
-saved = "★ Saved"
-mark_read = "Mark read"
-read = "Read"
 
