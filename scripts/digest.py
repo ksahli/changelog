@@ -3,6 +3,7 @@
 
 Usage:
     python scripts/digest.py [--force] [--dry-run] [--date YYYY-MM-DD]
+    python scripts/digest.py --refresh-front-matter
 
 Env:
     ANTHROPIC_API_KEY   required (except with --fetch-only)
@@ -37,6 +38,8 @@ WINDOW = timedelta(hours=26)
 MAX_CANDIDATES = 300
 SNIPPET_LEN = 400
 HISTORY_DAYS = 3
+TAG_HISTORY_DAYS = 14
+MAX_VOCABULARY = 150
 USER_AGENT = "daily-tech-digest/1.0 (+https://github.com/)"
 
 CATEGORY_LABELS = {
@@ -62,6 +65,11 @@ def canonical_url(url: str) -> str:
     query = [(k, v) for k, v in parse_qsl(parts.query) if not TRACKING_PARAMS.match(k)]
     path = parts.path.rstrip("/") or "/"
     return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), path, urlencode(query), ""))
+
+
+def normalize_tag(tag: str) -> str:
+    """'#Remote Code_Execution' -> 'remote-code-execution'."""
+    return re.sub(r"[^a-z0-9.+]+", "-", tag.strip().lstrip("#").lower()).strip("-")
 
 
 def title_key(title: str) -> str:
@@ -158,6 +166,20 @@ def recent_urls(today: date) -> set[str]:
     return urls
 
 
+def recent_tags(today: date) -> list[str]:
+    """Tags of the last TAG_HISTORY_DAYS digests, most used first."""
+    counts: dict[str, int] = {}
+    for days in range(1, TAG_HISTORY_DAYS + 1):
+        path = DIGEST_DIR / f"{today - timedelta(days=days)}.md"
+        if not path.exists():
+            continue
+        for section in read_front_matter(path).get("extra", {}).get("sections", []):
+            for item in section.get("items", []):
+                for tag in item.get("tags", []):
+                    counts[tag] = counts.get(tag, 0) + 1
+    return sorted(counts, key=lambda t: (-counts[t], t))[:MAX_VOCABULARY]
+
+
 # ---------------------------------------------------------------------------
 # Claude
 # ---------------------------------------------------------------------------
@@ -221,7 +243,11 @@ DIGEST_SCHEMA = _obj(
                                     "type": "array",
                                     "items": _obj({"url": {"type": "string"}, "source": {"type": "string"}}),
                                 },
-                                "tags": {"type": "array", "items": {"type": "string"}},
+                                "tags": {
+                                    "type": "array",
+                                    "description": "1-4 lowercase, hyphenated topic tags (e.g. rce, kubernetes, supply-chain).",
+                                    "items": {"type": "string"},
+                                },
                             }
                         ),
                     },
@@ -261,10 +287,17 @@ def call_claude(system: str, schema: dict, content: str) -> dict:
 
 def ask_claude(candidates: list[dict], today: date) -> dict:
     payload = json.dumps(candidates, ensure_ascii=False)
+    vocabulary = recent_tags(today)
+    # Reusing earlier tags keeps the tag pages from splintering (rce vs remote-code-execution).
+    tags_hint = (
+        "Tags used in recent digests (reuse these when they fit, add new ones only when needed): "
+        + ", ".join(vocabulary) + "\n\n"
+        if vocabulary else ""
+    )
     return call_claude(
         SYSTEM_PROMPT,
         DIGEST_SCHEMA,
-        f"Today is {today:%A, %B %d, %Y}. "
+        f"Today is {today:%A, %B %d, %Y}. {tags_hint}"
         f"Here are {len(candidates)} candidate items from the last 24 hours as JSON:\n\n"
         f"{payload}",
     )
@@ -289,7 +322,7 @@ def validate(digest: dict, candidates: list[dict]) -> dict:
                     log(f"  ! dropped unknown link: {link.get('url')}")
             if links:
                 item["links"] = links
-                item.setdefault("tags", [])
+                item["tags"] = normalize_tags(item.get("tags", []))
                 items.append(item)
         if items:
             rank = {"high": 0, "medium": 1, "low": 2}
@@ -303,17 +336,31 @@ def validate(digest: dict, candidates: list[dict]) -> dict:
     return {"tldr": digest.get("tldr", []), "sections": sections}
 
 
+def normalize_tags(tags: list[str]) -> list[str]:
+    return list(dict.fromkeys(t for t in map(normalize_tag, tags) if t))
+
+
 # ---------------------------------------------------------------------------
 # Output
 # ---------------------------------------------------------------------------
 
-def render_page(digest: dict, today: date, stats: dict) -> str:
+def taxonomies(sections: list[dict]) -> dict:
+    """Page-level terms for Zola: the union of the items' tags, and the categories present."""
+    tags = [t for s in sections for i in s["items"] for t in i.get("tags", [])]
+    return {
+        "tags": sorted(set(tags)),
+        "categories": [s["category"] for s in sections],
+    }
+
+
+def render_page(digest: dict, today: date, stats: dict, model: str = MODEL) -> str:
     tldr = digest["tldr"]
     front = {
         "title": f"Tech digest — {today:%A, %B} {today.day}, {today.year}",
         "date": today.isoformat(),
         "description": tldr[0] if tldr else "Daily tech digest",
-        "extra": {"tldr": tldr, "sections": digest["sections"], "stats": stats, "model": MODEL},
+        "taxonomies": taxonomies(digest["sections"]),
+        "extra": {"tldr": tldr, "sections": digest["sections"], "stats": stats, "model": model},
         # The site is served at the root; /en/... redirects there.
         "aliases": [f"/en/digest/{today}/"],
     }
@@ -321,13 +368,33 @@ def render_page(digest: dict, today: date, stats: dict) -> str:
     return f"---\n{json.dumps(front, ensure_ascii=False, indent=1)}\n---\n\n{body}\n"
 
 
+def refresh_front_matter() -> None:
+    """Re-render every digest from its own data (normalized tags, taxonomies). No API call."""
+    for path in sorted(DIGEST_DIR.glob("????-??-??.md")):
+        extra = read_front_matter(path)["extra"]
+        for section in extra["sections"]:
+            for item in section["items"]:
+                item["tags"] = normalize_tags(item.get("tags", []))
+        digest = {"tldr": extra.get("tldr", []), "sections": extra["sections"]}
+        page = render_page(digest, date.fromisoformat(path.stem), extra.get("stats", {}), extra.get("model", MODEL))
+        if page != path.read_text(encoding="utf-8"):
+            path.write_text(page, encoding="utf-8")
+            log(f"Refreshed {path.relative_to(ROOT)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--force", action="store_true", help="overwrite today's digest if it exists")
     parser.add_argument("--dry-run", action="store_true", help="print the digest instead of writing it")
     parser.add_argument("--fetch-only", action="store_true", help="only fetch feeds and print candidates")
+    parser.add_argument("--refresh-front-matter", action="store_true",
+                        help="re-render existing digests' front matter (tags, taxonomies) without calling Claude")
     parser.add_argument("--date", type=date.fromisoformat, default=datetime.now(timezone.utc).date())
     args = parser.parse_args()
+
+    if args.refresh_front_matter:
+        refresh_front_matter()
+        return 0
 
     today: date = args.date
     out_path = DIGEST_DIR / f"{today}.md"

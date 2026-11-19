@@ -25,7 +25,7 @@
   // "#rce" matches a tag exactly; anything else matches the story's own text
   // (not the "N sources" label, which would make "rce" match everything).
   const index = stories.map((el) => ({
-    tags: $$(".story-tags span", el).map((s) => s.textContent.slice(1).toLowerCase()),
+    tags: $$(".story-tags a", el).map((s) => s.textContent.slice(1).toLowerCase()),
     text: $$(".story-title, .story-summary, .story-why, .story-links, .story-tags", el)
       .map((s) => s.textContent).join(" ").toLowerCase(),
   }));

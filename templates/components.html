@@ -17,12 +17,14 @@
 {% endcomponent category_dot %}
 
 {#- One story. -#}
-{% component item_card(item, lang, key, label) %}
+{#- `permalink` is the edition the story belongs to; `backlink` (optional) is the
+    text of a link back to the story in that edition, used outside the edition page. -#}
+{% component item_card(item, lang, key, label, category, permalink, backlink="") %}
 <article class="story" id="{{ key }}">
   <header class="story-head">
     <span class="story-meta">
       {{<importance_badge level={item.importance} lang={lang} />}}
-      <span class="story-cat">{{ label }}</span>
+      <a class="story-cat" href="{{ get_taxonomy_url(kind='categories', name=category, lang=lang) }}">{{ label }}</a>
     </span>
     <span class="story-title">{{ item.title }}</span>
   </header>
@@ -36,8 +38,11 @@
         <a href="{{ link.url }}" rel="noopener" target="_blank" data-source="{{ link.source or trans(key='source', lang=lang) }}">{{ link.source or trans(key="source", lang=lang) }} ↗</a>
         {%- endfor %}
       </span>
-      <span class="story-tags">{% for tag in item.tags %}<span>#{{ tag }}</span>{% endfor %}</span>
+      <span class="story-tags">{% for tag in item.tags %}<a href="{{ get_taxonomy_url(kind='tags', name=tag, lang=lang) }}">#{{ tag }}</a>{% endfor %}</span>
     </div>
+    {%- if backlink %}
+    <a class="story-backlink" href="{{ permalink }}#{{ key }}">{{ backlink }} →</a>
+    {%- endif %}
   </div>
 </article>
 {% endcomponent item_card %}
@@ -111,7 +116,7 @@
   {% if lead_key != "" %}
   <section id="lead">
   {% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
-    {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} />}}{% endif %}
+    {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} category={cat} permalink={page.permalink} />}}{% endif %}
   {% endfor %}{% endfor %}
   </section>
   {% endif %}
@@ -129,7 +134,7 @@
   <div id="stories">
   {% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
     {% set key = page.slug ~ "-" ~ cat ~ "-" ~ loop.index %}
-    {% if key != lead_key %}{{<item_card item={item} lang={lang} key={key} label={label} />}}{% endif %}
+    {% if key != lead_key %}{{<item_card item={item} lang={lang} key={key} label={label} category={cat} permalink={page.permalink} />}}{% endif %}
   {% endfor %}{% endfor %}
   </div>
   <p class="py-4 text-center text-sm italic text-muted" data-no-results hidden>{{ trans(key="no_results", lang=lang) }}</p>
@@ -169,3 +174,33 @@
 {{<ticker page={page} lang={lang} />}}
 </div>
 {% endcomponent digest %}
+
+{#- Stories from several editions that carry one tag or belong to one category,
+    newest edition first, each linking back to its place in the edition. -#}
+{% component term_stories(pages, lang, tag="", category="") %}
+{% set locale = trans(key="locale", lang=lang) %}
+{% for page in pages %}
+  <section class="mb-8">
+    <h2 class="smallcaps border-y border-ink py-1 text-center text-lg font-bold">
+      <a href="{{ page.permalink }}" class="hover:text-accent">{{ page.date | date(format=trans(key="date_long", lang=lang), locale=locale) }}</a>
+    </h2>
+    {% set backlink = trans(key="from_edition", lang=lang) | replace(from="{date}", to=page.date | date(format=trans(key="date_short", lang=lang), locale=locale)) %}
+    <div class="term-stories">
+    {% for section in page.extra.sections %}{% set cat = section.category %}{% for item in section.items %}
+      {% if (tag and tag in item.tags) or (category and category == cat) %}
+        {{<item_card item={item} lang={lang} key={page.slug ~ "-" ~ cat ~ "-" ~ loop.index} label={section.label} category={cat} permalink={page.permalink} backlink={backlink} />}}
+      {% endif %}
+    {% endfor %}{% endfor %}
+    </div>
+  </section>
+{% endfor %}
+{% endcomponent term_stories %}
+
+{% component pager(paginator, lang) %}
+{% if paginator.number_pagers > 1 %}
+<nav class="mt-10 flex justify-between border-y border-ink py-2 font-serif text-lg italic">
+  {% if paginator.previous %}<a href="{{ paginator.previous }}" class="text-muted hover:text-accent">{{ trans(key="newer", lang=lang) }}</a>{% else %}<span></span>{% endif %}
+  {% if paginator.next %}<a href="{{ paginator.next }}" class="text-muted hover:text-accent">{{ trans(key="older", lang=lang) }}</a>{% endif %}
+</nav>
+{% endif %}
+{% endcomponent pager %}

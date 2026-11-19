@@ -10,6 +10,12 @@ generate_feeds = true
 feed_filenames = ["atom.xml"]
 feed_limit = 30
 
+# Terms are set per digest page by scripts/digest.py (union of its stories' tags and categories).
+taxonomies = [
+  { name = "tags", feed = true, paginate_by = 10 },
+  { name = "categories", feed = true, paginate_by = 10 },
+]
+
 [markdown]
 smart_punctuation = true
 
@@ -53,4 +59,13 @@ everything_else = "Everything else"
 past_editions = "Past editions"
 sources = "{n} sources"
 source_one = "1 source"
+tags = "Tags"
+tagged = "Stories tagged #{tag}"
+categories = "Sections"
+from_edition = "From the {date} edition"
+editions_count = "{n} editions"
+cat_sec = "Security"
+cat_dev = "Dev & Languages"
+cat_ops = "Ops & Cloud"
+cat_tech = "Tech & AI"
 

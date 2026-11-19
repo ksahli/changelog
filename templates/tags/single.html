@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}#{{ term.name }} · {{ config.title }}{% endblock %}
+
+{% block content %}
+{% set heading = trans(key="tagged", lang=lang) | replace(from="{tag}", to=term.name) %}
+<h1 class="smallcaps mx-auto mb-8 max-w-3xl border-b border-ink py-2 text-center text-2xl font-bold sm:text-3xl">{{ heading }}</h1>
+{{<term_stories pages={paginator.pages} lang={lang} tag={term.name} />}}
+{{<pager paginator={paginator} lang={lang} />}}
+<p class="mt-6 text-center text-sm italic"><a href="{{ term.permalink }}atom.xml" class="text-muted underline decoration-rule underline-offset-4 hover:text-accent">{{ trans(key="feed", lang=lang) }}</a></p>
+{% endblock %}

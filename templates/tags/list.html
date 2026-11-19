@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trans(key="tags", lang=lang) }} · {{ config.title }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+<h1 class="smallcaps border-b border-ink py-2 text-center text-2xl font-bold sm:text-3xl">{{ trans(key="tags", lang=lang) }}</h1>
+<p class="tag-cloud flex flex-wrap items-baseline justify-center gap-x-4 gap-y-2 py-8 text-center font-serif italic">
+{% for term in terms | sort(attribute="page_count") | reverse %}
+  <a href="{{ term.permalink }}" style="--n: {{ term.page_count }}" title="{{ trans(key='editions_count', lang=lang) | replace(from='{n}', to=term.page_count ~ '') }}" class="text-ink hover:text-accent">#{{ term.name }}</a>
+{% endfor %}
+</p>
+</div>
+{% endblock %}

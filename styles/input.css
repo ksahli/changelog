@@ -92,6 +92,15 @@
   .story-links a:hover { color: var(--accent); text-decoration-color: var(--accent); }
   .story-links a.story-src-more { margin-left: -.5rem; font-size: 10px; vertical-align: super; }
   .story-tags { display: flex; flex-wrap: wrap; gap: .5rem; color: var(--faint); font-style: italic; }
+  .story-tags a:hover, a.story-cat:hover { color: var(--accent); }
+  .story-backlink { align-self: flex-start; font-size: 12px; font-style: italic; color: var(--muted); text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  .story-backlink:hover { color: var(--accent); }
+
+  /* Tag and section pages: same columns as "Everything else". */
+  .term-stories { columns: 17rem 3; column-gap: 2.25rem; column-rule: 1px solid var(--rule); }
+
+  /* Tag cloud: size grows with the number of editions using the tag. */
+  .tag-cloud a { font-size: calc(14px + min(var(--n), 12) * 1.5px); }
 
   /* Everything else: newspaper columns. */
   #stories { columns: 17rem 3; column-gap: 2.25rem; column-rule: 1px solid var(--rule); }

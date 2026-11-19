@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trans(key="categories", lang=lang) }} · {{ config.title }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+<h1 class="smallcaps border-b border-ink py-2 text-center text-2xl font-bold sm:text-3xl">{{ trans(key="categories", lang=lang) }}</h1>
+<ul class="divide-y divide-rule">
+{% for term in terms %}
+  <li><a href="{{ term.permalink }}" class="flex items-baseline justify-between py-3.5 font-serif text-lg hover:text-accent">
+    <span>{{ trans(key="cat_" ~ term.name, lang=lang) }}</span>
+    <span class="text-sm italic text-muted">{{ trans(key="editions_count", lang=lang) | replace(from="{n}", to=term.page_count ~ "") }}</span>
+  </a></li>
+{% endfor %}
+</ul>
+</div>
+{% endblock %}

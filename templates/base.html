@@ -39,6 +39,8 @@
       <nav class="smallcaps flex items-center gap-3 text-[15px] text-ink">
         <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="hover:text-accent">{{ trans(key="archive", lang=lang) }}</a>
         <span class="text-faint">·</span>
+        <a href="{{ get_url(path='tags/', lang=lang) }}" class="hover:text-accent">{{ trans(key="tags", lang=lang) }}</a>
+        <span class="text-faint">·</span>
         <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
         <span class="text-faint" hidden>·</span>
         <button type="button" data-theme-toggle data-t-dark="{{ trans(key='theme_dark', lang=lang) }}" data-t-light="{{ trans(key='theme_light', lang=lang) }}" class="cursor-pointer lowercase hover:text-accent" hidden></button>
