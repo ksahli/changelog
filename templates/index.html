@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if lang == config.default_language %}{% set digests = get_section(path="digest/_index.md") %}{% else %}{% set digests = get_section(path="digest/_index." ~ lang ~ ".md") %}{% endif %}
+{% set digests = get_section(path="digest/_index.md") %}
 {% if digests.pages %}
   {{<digest page={digests.pages[0]} heading_link={true} />}}
 {% else %}

@@ -11,10 +11,6 @@
   <link rel="stylesheet" href="{{ get_url(path='css/site.css', cachebust=true) }}">
   <script src="{{ get_url(path='js/edition.js', cachebust=true) }}" defer></script>
   <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}">
-  {%- if page %}{% set translations = page.translations %}{% elif section %}{% set translations = section.translations %}{% else %}{% set translations = [] %}{% endif %}
-  {%- for t in translations %}
-  <link rel="alternate" hreflang="{{ t.lang }}" href="{{ t.permalink }}">
-  {%- endfor %}
 </head>
 <body class="min-h-screen bg-paper font-sans text-ink antialiased">
   <header class="mx-auto max-w-3xl px-4 pt-12 pb-8 text-center">
@@ -24,19 +20,6 @@
       <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="transition-colors hover:text-accent">{{ trans(key="archive", lang=lang) }}</a>
       <span class="text-faint">·</span>
       <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="transition-colors hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
-      <span class="text-faint">·</span>
-      {#- Each language links to this page's translation, or to that language's home page. #}
-      <span class="flex gap-3">
-      {%- for code in config.extra.languages %}
-        {%- if code == lang %}
-        <span aria-current="true" class="text-ink underline decoration-accent underline-offset-4">{{ code }}</span>
-        {%- else %}
-        {%- set_global lang_url = get_url(path='/', lang=code) %}
-        {%- for t in translations %}{% if t.lang == code %}{% set_global lang_url = t.permalink %}{% endif %}{% endfor %}
-        <a href="{{ lang_url }}" hreflang="{{ code }}" lang="{{ code }}" class="transition-colors hover:text-accent">{{ code }}</a>
-        {%- endif %}
-      {%- endfor %}
-      </span>
     </nav>
   </header>
 

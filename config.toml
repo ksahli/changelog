@@ -15,10 +15,8 @@ smart_punctuation = true
 
 [extra]
 repo_url = ""
-# Order of the header language switcher; the first one is served at the root.
-languages = ["en", "fr", "de"]
 
-# UI strings for the default language (English); French below.
+# UI strings, read by the templates with trans().
 # `{items}`, `{candidates}` and `{sources}` are substituted in templates;
 # `{n}`, `{mine}`, `{total}` and `{high}` are substituted by static/js/edition.js;
 # date_* values are UTS-35 patterns (localized via `locale`).
@@ -64,98 +62,3 @@ saved = "★ Saved"
 mark_read = "Mark read"
 read = "Read"
 
-[languages.fr]
-title = "Changelog"
-description = "Ce qui a changé dans le monde depuis hier"
-generate_feeds = true
-feed_filenames = ["atom.xml"]
-
-[languages.fr.translations]
-locale = "fr_FR"
-date_long = "EEEE d MMMM y"
-date_short = "d MMMM"
-date_day = "EEE d"
-date_month = "MMMM y"
-archive = "Archives"
-feed = "Flux"
-todays_edition = "L'édition du jour"
-the_edition = "L'édition"
-stats = "{items} sujets retenus parmi {candidates} articles de {sources} flux"
-in_brief = "En bref"
-why_it_matters = "Pourquoi c'est important —"
-source = "source"
-high = "Élevée"
-medium = "Moyenne"
-low = "Faible"
-newer = "← Plus récent"
-older = "Plus ancien →"
-no_digest = "Pas encore de revue. La première paraîtra après la prochaine exécution matinale."
-footer = "Générée chaque matin à partir de flux RSS publics, résumée puis traduite par Claude. Les résumés peuvent contenir des erreurs : vérifiez les sources liées avant d'agir."
-search = "Rechercher"
-search_placeholder = "Rechercher dans l'édition, ou #rce"
-results = "{n} résultats"
-no_results = "Aucun sujet ne correspond."
-also_patch = "À corriger aussi aujourd'hui"
-for_your_stack = "Pour votre stack"
-everything_else = "Tout le reste"
-past_editions = "Éditions précédentes"
-your_stack = "Votre stack"
-your_stack_hint = "Suivez les tags qui vous intéressent. Enregistré dans ce navigateur uniquement."
-stack_summary = "{mine} sujets sur {total} concernent votre stack, dont {high} prioritaires."
-stack_summary_empty = "Suivez quelques tags ci-dessous pour une une adaptée à votre stack."
-in_your_stack = "dans votre stack"
-top_story = "à la une"
-sources = "{n} sources"
-source_one = "1 source"
-save = "Garder"
-saved = "★ Gardé"
-mark_read = "Marquer comme lu"
-read = "Lu"
-
-[languages.de]
-title = "Changelog"
-description = "Was sich seit gestern in der Welt verändert hat"
-generate_feeds = true
-feed_filenames = ["atom.xml"]
-
-[languages.de.translations]
-locale = "de_DE"
-date_long = "EEEE, d. MMMM y"
-date_short = "d. MMMM"
-date_day = "EEE d."
-date_month = "MMMM y"
-archive = "Archiv"
-feed = "Feed"
-todays_edition = "Die heutige Ausgabe"
-the_edition = "Die Ausgabe"
-stats = "{items} Meldungen ausgewählt aus {candidates} Beiträgen von {sources} Feeds"
-in_brief = "Kurz gefasst"
-why_it_matters = "Warum es wichtig ist —"
-source = "Quelle"
-high = "Hoch"
-medium = "Mittel"
-low = "Niedrig"
-newer = "← Neuer"
-older = "Älter →"
-no_digest = "Noch kein Digest. Der erste erscheint nach dem nächsten Morgenlauf."
-footer = "Jeden Morgen aus öffentlichen RSS-Feeds erstellt, von Claude zusammengefasst und übersetzt. Zusammenfassungen können Fehler enthalten – prüfen Sie die verlinkten Quellen, bevor Sie handeln."
-search = "Suchen"
-search_placeholder = "Diese Ausgabe durchsuchen, oder #rce"
-results = "{n} Treffer"
-no_results = "Keine passenden Meldungen."
-also_patch = "Heute außerdem patchen"
-for_your_stack = "Für Ihren Stack"
-everything_else = "Alles andere"
-past_editions = "Frühere Ausgaben"
-your_stack = "Ihr Stack"
-your_stack_hint = "Folgen Sie den Tags, die Sie interessieren. Nur in diesem Browser gespeichert."
-stack_summary = "{mine} von {total} Meldungen betreffen Ihren Stack, {high} davon mit hoher Priorität."
-stack_summary_empty = "Folgen Sie unten ein paar Tags für eine Titelseite passend zu Ihrem Stack."
-in_your_stack = "in Ihrem Stack"
-top_story = "Top-Meldung"
-sources = "{n} Quellen"
-source_one = "1 Quelle"
-save = "Merken"
-saved = "★ Gemerkt"
-mark_read = "Als gelesen markieren"
-read = "Gelesen"

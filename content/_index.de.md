@@ -1,3 +1,0 @@
-+++
-title = "Täglicher Tech-Digest"
-+++
