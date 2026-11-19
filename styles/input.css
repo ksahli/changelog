@@ -16,6 +16,11 @@
   --high: light-dark(#8b2a1e, #d0806a);
   --medium: light-dark(#7a5a22, #c9a464);
   --low: light-dark(#6f6656, #9a917f);
+  /* The ticker is inverted against the page, so its severity colors flip too. */
+  --ticker-bg: light-dark(#1b1813, #efe6d2);
+  --ticker-ink: light-dark(#efe6d2, #1b1813);
+  --ticker-high: light-dark(#ef5a43, #a3241a);
+  --ticker-medium: light-dark(#f0c03a, #8a6200);
   --grain: .16;
 }
 :root[data-theme="light"] { color-scheme: light; }
@@ -49,6 +54,7 @@
 /* Newsprint: a faint darkening toward the edges, plus fine grain on top. */
 @layer base {
   body {
+    padding-bottom: 2.25rem; /* room for the ticker */
     background: radial-gradient(ellipse at center, transparent 50%, color-mix(in oklab, var(--ink) 10%, transparent)) fixed, var(--paper);
   }
   body::before {
@@ -113,4 +119,29 @@
   .edition-day.is-current .edition-dot { background: var(--ink); }
   .edition-day.is-current { font-weight: 700; }
   .edition-day:hover .edition-dot { background: var(--accent); border-color: var(--accent); }
+
+  /* Ticker: the track holds the list twice and slides by half its width, so the loop is seamless. */
+  .ticker {
+    position: fixed; inset-inline: 0; bottom: 0; z-index: 50; display: flex; height: 2.25rem;
+    background: var(--ticker-bg); color: var(--ticker-ink); border-top: 2px solid var(--ticker-high);
+  }
+  .ticker-tag { display: flex; align-items: center; flex-shrink: 0; padding: 0 .9rem; background: var(--ticker-high); color: #fff; font-weight: 700; }
+  .ticker-window {
+    flex: 1; min-width: 0; overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+  }
+  .ticker-track { display: flex; width: max-content; height: 100%; animation: ticker calc(var(--n) * 7s) linear infinite; }
+  .ticker:hover .ticker-track { animation-play-state: paused; }
+  .ticker-list { display: flex; align-items: center; white-space: nowrap; font-family: var(--font-serif); font-size: 14px; }
+  .ticker-list li { padding-left: 1.5rem; }
+  .ticker-list li::after { content: "✦"; padding-left: 1.5rem; color: var(--ticker-high); }
+  .ticker-imp { margin-right: .4rem; font-weight: 700; font-variant: small-caps; text-transform: lowercase; letter-spacing: .12em; }
+  .ticker-high { color: var(--ticker-high); }
+  .ticker-medium { color: var(--ticker-medium); }
+  @keyframes ticker { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+    .ticker-window { overflow-x: auto; }
+    .ticker-list + .ticker-list { display: none; }
+  }
 }

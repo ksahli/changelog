@@ -42,6 +42,33 @@
 </article>
 {% endcomponent item_card %}
 
+{#- TV-style crawl pinned to the bottom: high and medium titles, nothing clickable.
+    The list is rendered twice so the CSS loop (translate to -50%) wraps without a gap. -#}
+{% component ticker(page, lang) %}
+{% set_global n = 0 %}
+{% for section in page.extra.sections %}{% for item in section.items %}
+  {% if item.importance == "high" or item.importance == "medium" %}{% set_global n = n + 1 %}{% endif %}
+{% endfor %}{% endfor %}
+{% if n > 0 %}
+<aside class="ticker" aria-label="{{ trans(key='latest', lang=lang) }}" style="--n: {{ n }}">
+  <span class="ticker-tag smallcaps">{{ trans(key="latest", lang=lang) }}</span>
+  <div class="ticker-window">
+    <div class="ticker-track">
+    {% for copy in range(end=2) %}
+      <ul class="ticker-list"{% if copy == 1 %} aria-hidden="true"{% endif %}>
+      {% for section in page.extra.sections %}{% for item in section.items %}
+        {% if item.importance == "high" or item.importance == "medium" %}
+        <li><span class="ticker-imp ticker-{{ item.importance }}">{{ trans(key=item.importance, lang=lang) }}</span> {{ item.title }}</li>
+        {% endif %}
+      {% endfor %}{% endfor %}
+      </ul>
+    {% endfor %}
+    </div>
+  </div>
+</aside>
+{% endif %}
+{% endcomponent ticker %}
+
 {% component digest(page, heading_link=false) %}
 {% set lang = page.lang %}
 {% set locale = trans(key="locale", lang=lang) %}
@@ -139,5 +166,6 @@
   {% endif %}
 </nav>
 {% endif %}
+{{<ticker page={page} lang={lang} />}}
 </div>
 {% endcomponent digest %}
