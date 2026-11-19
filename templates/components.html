@@ -16,16 +16,16 @@
   {%- endif -%}
 {% endcomponent category_dot %}
 
-{#- One story, rendered as <details> so it expands without JS. -#}
-{% component item_card(item, lang, key, label, lead=false) %}
-<details class="story" id="{{ key }}"{% if lead %} open{% endif %}>
-  <summary class="story-head">
+{#- One story. -#}
+{% component item_card(item, lang, key, label) %}
+<article class="story" id="{{ key }}">
+  <header class="story-head">
     <span class="story-meta">
       {{<importance_badge level={item.importance} lang={lang} />}}
       <span class="story-cat">{{ label }}</span>
     </span>
     <span class="story-title">{{ item.title }}</span>
-  </summary>
+  </header>
   <div class="story-body">
     <p class="story-summary">{{ item.summary }}</p>
     <p class="story-why"><span class="story-why-label">{{ trans(key="why_it_matters", lang=lang) }}</span> {{ item.why_it_matters }}</p>
@@ -39,7 +39,7 @@
       <span class="story-tags">{% for tag in item.tags %}<span>#{{ tag }}</span>{% endfor %}</span>
     </div>
   </div>
-</details>
+</article>
 {% endcomponent item_card %}
 
 {% component digest(page, heading_link=false) %}
@@ -84,7 +84,7 @@
   {% if lead_key != "" %}
   <section id="lead">
   {% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
-    {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} lead={true} />}}{% endif %}
+    {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} />}}{% endif %}
   {% endfor %}{% endfor %}
   </section>
   {% endif %}

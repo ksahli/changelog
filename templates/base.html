@@ -9,6 +9,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=UnifrakturMaguntia&display=swap">
   <link rel="stylesheet" href="{{ get_url(path='css/site.css', cachebust=true) }}">
+  <script>
+    // Inline so a saved theme applies before first paint. Without JS the site follows the OS.
+    (() => {
+      const html = document.documentElement;
+      try { const t = localStorage.getItem("theme"); if (t) html.dataset.theme = t; } catch {}
+      const dark = () => html.dataset.theme ? html.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      const label = (b) => { b.textContent = b.dataset[dark() ? "tLight" : "tDark"]; };
+      addEventListener("DOMContentLoaded", () => {
+        const b = document.querySelector("[data-theme-toggle]");
+        label(b); b.hidden = false;
+        b.previousElementSibling.hidden = false;
+        b.addEventListener("click", () => {
+          html.dataset.theme = dark() ? "light" : "dark";
+          try { localStorage.setItem("theme", html.dataset.theme); } catch {}
+          label(b);
+        });
+        matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => label(b));
+      });
+    })();
+  </script>
   <script src="{{ get_url(path='js/edition.js', cachebust=true) }}" defer></script>
   <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}">
 </head>
@@ -20,6 +40,8 @@
         <a href="{{ get_url(path='@/digest/_index.md', lang=lang) }}" class="hover:text-accent">{{ trans(key="archive", lang=lang) }}</a>
         <span class="text-faint">·</span>
         <a href="{{ get_url(path='atom.xml', lang=lang, trailing_slash=false) }}" class="hover:text-accent">{{ trans(key="feed", lang=lang) }}</a>
+        <span class="text-faint" hidden>·</span>
+        <button type="button" data-theme-toggle data-t-dark="{{ trans(key='theme_dark', lang=lang) }}" data-t-light="{{ trans(key='theme_light', lang=lang) }}" class="cursor-pointer lowercase hover:text-accent" hidden></button>
       </nav>
     </div>
     <a href="{{ get_url(path='/', lang=lang) }}" class="block py-3 text-center font-display text-[clamp(3.25rem,11vw,7rem)] leading-none text-ink sm:py-4">{{ config.title }}</a>

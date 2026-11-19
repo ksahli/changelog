@@ -2,35 +2,26 @@
 @source "../templates";
 @source "../static/js";
 
-/* Palette lives in plain variables so dark mode can swap them in one place. */
+/* Palette as light-dark() pairs: color-scheme picks the side. It follows the OS
+   unless the reader chose a theme, which sets data-theme on <html>. */
 :root {
-  --paper: #efe6d2;
-  --surface: #f5eedd;
-  --ink: #1b1813;
-  --muted: #5e5547;
-  --faint: #8a7f6c;
-  --rule: #bfb39c;
-  --accent: #8b2a1e;
-  --high: #8b2a1e;
-  --medium: #7a5a22;
-  --low: #6f6656;
+  color-scheme: light dark;
+  --paper: light-dark(#efe6d2, #1a1712);
+  --surface: light-dark(#f5eedd, #211d17);
+  --ink: light-dark(#1b1813, #e8dfcc);
+  --muted: light-dark(#5e5547, #b0a58f);
+  --faint: light-dark(#8a7f6c, #7d7363);
+  --rule: light-dark(#bfb39c, #3a342a);
+  --accent: light-dark(#8b2a1e, #d08a6e);
+  --high: light-dark(#8b2a1e, #d0806a);
+  --medium: light-dark(#7a5a22, #c9a464);
+  --low: light-dark(#6f6656, #9a917f);
   --grain: .16;
 }
-
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; --grain: .3; }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #1a1712;
-    --surface: #211d17;
-    --ink: #e8dfcc;
-    --muted: #b0a58f;
-    --faint: #7d7363;
-    --rule: #3a342a;
-    --accent: #d08a6e;
-    --high: #d0806a;
-    --medium: #c9a464;
-    --low: #9a917f;
-    --grain: .3;
-  }
+  :root:not([data-theme="light"]) { --grain: .3; }
 }
 
 @theme {
@@ -75,15 +66,13 @@
   /* Stories. One element, two looks: lead and column item. */
   .story { break-inside: avoid; padding: .9rem 0 .25rem; }
   .story + .story { border-top: 1px solid var(--rule); }
-  .story-head { display: flex; flex-direction: column; gap: .3rem; cursor: pointer; list-style: none; }
-  .story-head::-webkit-details-marker { display: none; }
+  .story-head { display: flex; flex-direction: column; gap: .3rem; }
   .story-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem; font-size: 13px; color: var(--muted); }
   .story-meta > * + *::before { content: "·"; margin-right: .45rem; color: var(--faint); }
   .story-imp, .story-cat { font-family: var(--font-serif); font-variant: small-caps; text-transform: lowercase; letter-spacing: .12em; }
   .story-imp { font-weight: 700; }
   .story-dot { display: none; }
   .story-title { font-family: var(--font-serif); font-size: 19px; font-weight: 700; line-height: 1.2; color: var(--ink); text-wrap: balance; }
-  .story-head:hover .story-title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
   .story-body { display: flex; flex-direction: column; gap: .55rem; padding: .6rem 0 .8rem; font-size: 14.5px; line-height: 1.6; }
   .story-summary, .story-why, .brief li { hyphens: auto; }
   @media (min-width: 640px) { .story-summary, .story-why, .brief li { text-align: justify; } }
@@ -103,10 +92,9 @@
 
   /* Lead */
   #lead .story { padding: 0; }
-  #lead .story-head { gap: .7rem; cursor: default; }
+  #lead .story-head { gap: .7rem; }
   #lead .story-meta { justify-content: center; font-size: 14px; }
   #lead .story-title { font-size: clamp(2rem, 4.6vw, 3.25rem); line-height: 1.04; text-align: center; letter-spacing: -.01em; }
-  #lead .story-head:hover .story-title { text-decoration: none; }
   #lead .story-body { margin-top: 1rem; padding: 1.1rem 0 0; border-top: 1px solid var(--ink); gap: 1rem; font-size: 16px; line-height: 1.65; }
   #lead .story-summary::first-letter {
     float: left; font-family: var(--font-serif); font-weight: 700; font-size: 4.4em; line-height: .8;
