@@ -1,0 +1,17 @@
+# Overridden in CI with the GitHub Pages URL (zola build --base-url ...).
+base_url = "https://example.github.io/changelog"
+title = "Daily Tech Digest"
+description = "Everything a dev team should know today: security, dev, ops and tech news, summarized every morning."
+default_language = "en"
+
+compile_sass = false
+build_search_index = false
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+feed_limit = 30
+
+[markdown]
+smart_punctuation = true
+
+[extra]
+repo_url = ""

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set digests = get_section(path="digest/_index.md") %}
+{% if digests.pages %}
+  {{<digest page={digests.pages[0]} heading_link={true} />}}
+{% else %}
+  <p class="text-slate-500">No digest yet. The first one will show up after the next morning run.</p>
+{% endif %}
+{% endblock %}

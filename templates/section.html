@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section.title }} · {{ config.title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-6 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{{ section.title }}</h1>
+
+{% set pages = paginator.pages %}
+{% for page in pages %}
+  {% set month = page.date | date(format="%B %Y") %}
+  {% if loop.first or (pages[loop.index0 - 1].date | date(format="%B %Y")) != month %}
+    <h2 class="mt-8 mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{{ month }}</h2>
+    <ul class="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+  {% endif %}
+  <li>
+    <a href="{{ page.permalink }}" class="flex gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+      <span class="w-16 shrink-0 text-sm font-medium tabular-nums text-slate-900 dark:text-white">{{ page.date | date(format="%a %-d") }}</span>
+      <span class="text-sm text-slate-600 dark:text-slate-400">{{ page.description }}</span>
+    </a>
+  </li>
+  {% if loop.last or (pages[loop.index0 + 1].date | date(format="%B %Y")) != month %}
+    </ul>
+  {% endif %}
+{% endfor %}
+
+{% if paginator.number_pagers > 1 %}
+<nav class="mt-8 flex justify-between text-sm">
+  {% if paginator.previous %}<a href="{{ paginator.previous }}" class="text-sky-700 hover:underline dark:text-sky-400">← Newer</a>{% else %}<span></span>{% endif %}
+  {% if paginator.next %}<a href="{{ paginator.next }}" class="text-sky-700 hover:underline dark:text-sky-400">Older →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

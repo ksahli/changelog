@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ config.title }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ config.description }}{% endblock %}">
+  <link rel="stylesheet" href="{{ get_url(path='css/site.css', cachebust=true) }}">
+  <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml', trailing_slash=false) }}">
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200">
+  <header class="border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
+    <nav class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
+      <a href="{{ get_url(path='/') }}" class="flex items-center gap-2 font-semibold tracking-tight text-slate-900 dark:text-white">
+        <span class="inline-block size-2.5 rounded-full bg-emerald-500"></span>
+        {{ config.title }}
+      </a>
+      <div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+        <a href="{{ get_url(path='@/digest/_index.md') }}" class="hover:text-slate-900 dark:hover:text-white">Archive</a>
+        <a href="{{ get_url(path='atom.xml', trailing_slash=false) }}" class="hover:text-slate-900 dark:hover:text-white">Feed</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="mx-auto max-w-3xl px-4 pb-10 text-xs text-slate-500 dark:text-slate-500">
+    Generated each morning from public RSS feeds and summarized by Claude. Summaries can be wrong, so check the linked sources before you act on anything.
+  </footer>
+</body>
+</html>

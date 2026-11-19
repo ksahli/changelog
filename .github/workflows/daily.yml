@@ -1,0 +1,101 @@
+name: Daily digest
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC every day
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Regenerate today's digest even if it exists"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  ZOLA_VERSION: "0.23.6"
+  TAILWIND_VERSION: "4.1.14"
+
+jobs:
+  generate:
+    # A push only rebuilds the site; scheduled/manual runs fetch news first.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - run: pip install -r scripts/requirements.txt
+
+      - name: Generate digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DIGEST_MODEL: ${{ vars.DIGEST_MODEL }}
+          DIGEST_EFFORT: ${{ vars.DIGEST_EFFORT }}
+        run: python scripts/digest.py ${{ inputs.force && '--force' || '' }}
+
+      - name: Commit digest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/digest
+          if git diff --cached --quiet; then
+            echo "No new digest to commit"
+          else
+            git commit -m "digest: $(date -u +%F)"
+            git push
+          fi
+
+  build:
+    needs: generate
+    # Run after a successful generate, or on push when generate is skipped.
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }} # include the digest commit pushed above
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Install Zola and Tailwind
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -sSLf "https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/zola-v${ZOLA_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar xz -C "$HOME/bin"
+          curl -sSLf -o "$HOME/bin/tailwindcss" "https://github.com/tailwindlabs/tailwindcss/releases/download/v${TAILWIND_VERSION}/tailwindcss-linux-x64"
+          chmod +x "$HOME/bin/tailwindcss"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: |
+          tailwindcss -i styles/input.css -o static/css/site.css --minify
+          zola build --base-url "${{ steps.pages.outputs.base_url }}"
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

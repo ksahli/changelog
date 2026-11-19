@@ -1,0 +1,5 @@
+public/
+static/css/site.css
+bin/
+.venv/
+__pycache__/
