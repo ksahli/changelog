@@ -1,7 +1,7 @@
 # Overridden in CI with the GitHub Pages URL (zola build --base-url ...).
 base_url = "https://example.github.io/changelog"
-title = "Daily Tech Digest"
-description = "Everything a dev team should know today: security, dev, ops and tech news, summarized every morning."
+title = "Changelog"
+description = "What changed in the world since yesterday"
 default_language = "en"
 
 compile_sass = false

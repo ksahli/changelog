@@ -1,82 +1,82 @@
 {% component importance_badge(level) %}
   {%- if level == "high" -%}
-    <span class="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-red-700 dark:bg-red-500/15 dark:text-red-300">High</span>
+    <span class="shrink-0 pt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-high">High</span>
   {%- elif level == "medium" -%}
-    <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Medium</span>
+    <span class="shrink-0 pt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-medium">Medium</span>
   {%- else -%}
-    <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700/40 dark:text-slate-400">Low</span>
+    <span class="shrink-0 pt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-low">Low</span>
   {%- endif -%}
 {% endcomponent importance_badge %}
 
 {% component category_dot(category) %}
-  {%- if category == "sec" -%}<span class="size-2 rounded-full bg-red-500"></span>
-  {%- elif category == "dev" -%}<span class="size-2 rounded-full bg-sky-500"></span>
-  {%- elif category == "ops" -%}<span class="size-2 rounded-full bg-violet-500"></span>
-  {%- else -%}<span class="size-2 rounded-full bg-emerald-500"></span>
+  {%- if category == "sec" -%}<span class="size-1.5 rounded-full bg-cat-sec"></span>
+  {%- elif category == "dev" -%}<span class="size-1.5 rounded-full bg-cat-dev"></span>
+  {%- elif category == "ops" -%}<span class="size-1.5 rounded-full bg-cat-ops"></span>
+  {%- else -%}<span class="size-1.5 rounded-full bg-cat-news"></span>
   {%- endif -%}
 {% endcomponent category_dot %}
 
 {% component item_card(item) %}
-<article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-  <div class="flex items-start justify-between gap-3">
-    <h3 class="font-semibold leading-snug text-slate-900 dark:text-white">{{ item.title }}</h3>
+<article class="py-6">
+  <div class="flex items-start justify-between gap-4">
+    <h3 class="font-serif text-xl font-semibold leading-snug text-ink">{{ item.title }}</h3>
     {{<importance_badge level={item.importance} />}}
   </div>
-  <p class="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">{{ item.summary }}</p>
-  <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-    <span class="font-medium text-slate-900 dark:text-slate-200">Why it matters:</span> {{ item.why_it_matters }}
+  <p class="mt-2 text-[15px] leading-relaxed text-ink/85">{{ item.summary }}</p>
+  <p class="mt-2 text-[15px] leading-relaxed text-muted">
+    <span class="font-serif italic text-ink">Why it matters —</span> {{ item.why_it_matters }}
   </p>
-  <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+  <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
     {% for link in item.links %}
-      <a href="{{ link.url }}" rel="noopener" target="_blank" class="font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">{{ link.source or "source" }} ↗</a>
+      <a href="{{ link.url }}" rel="noopener" target="_blank" class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:text-accent hover:decoration-accent">{{ link.source or "source" }} ↗</a>
     {% endfor %}
     {% for tag in item.tags %}
-      <span class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-500 dark:bg-slate-800 dark:text-slate-400">#{{ tag }}</span>
+      <span class="text-faint">#{{ tag }}</span>
     {% endfor %}
   </div>
 </article>
 {% endcomponent item_card %}
 
 {% component digest(page, heading_link=false) %}
-<header class="mb-6">
-  <p class="text-sm font-medium text-emerald-600 dark:text-emerald-400">{{ page.date | date(format="%A, %B %-d, %Y") }}</p>
-  <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-    {% if heading_link %}<a href="{{ page.permalink }}" class="hover:underline">Today's digest</a>{% else %}Daily digest{% endif %}
+<header class="mb-10 text-center">
+  <p class="text-[11px] font-medium uppercase tracking-[0.25em] text-accent">{{ page.date | date(format="%A, %B %-d, %Y") }}</p>
+  <h1 class="mt-2 font-serif text-3xl font-medium text-ink sm:text-4xl">
+    {% if heading_link %}<a href="{{ page.permalink }}" class="transition-colors hover:text-accent">Today's edition</a>{% else %}The edition{% endif %}
   </h1>
   {% if page.extra.stats %}
-  <p class="mt-1 text-xs text-slate-500">{{ page.extra.stats.items }} stories picked from {{ page.extra.stats.candidates }} items across {{ page.extra.stats.sources }} feeds</p>
+  <p class="mt-2 text-xs text-faint">{{ page.extra.stats.items }} stories picked from {{ page.extra.stats.candidates }} items across {{ page.extra.stats.sources }} feeds</p>
   {% endif %}
 </header>
 
 {% if page.extra.tldr %}
-<section class="mb-8 rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/40">
-  <h2 class="text-sm font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">TL;DR</h2>
-  <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-slate-800 marker:text-emerald-500 dark:text-slate-200">
+<section class="mb-12 border-l-2 border-accent bg-surface py-5 pr-5 pl-6">
+  <h2 class="text-[11px] font-medium uppercase tracking-[0.25em] text-accent">In brief</h2>
+  <ul class="mt-3 space-y-2 font-serif text-lg leading-snug text-ink">
     {% for line in page.extra.tldr %}<li>{{ line }}</li>{% endfor %}
   </ul>
 </section>
 {% endif %}
 
 {% for section in page.extra.sections %}
-<section class="mb-10" id="{{ section.category }}">
-  <h2 class="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
+<section class="mb-12" id="{{ section.category }}">
+  <h2 class="flex items-center gap-3 border-b border-ink/80 pb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-ink">
     {{<category_dot category={section.category} />}}
     {{ section.label }}
-    <span class="text-sm font-normal text-slate-400">{{ section.items | length }}</span>
+    <span class="ml-auto font-normal tabular-nums text-faint">{{ section.items | length }}</span>
   </h2>
-  <div class="space-y-3">
+  <div class="divide-y divide-rule">
     {% for item in section.items %}{{<item_card item={item} />}}{% endfor %}
   </div>
 </section>
 {% endfor %}
 
-<nav class="mt-10 flex justify-between border-t border-slate-200 pt-4 text-sm dark:border-slate-800">
+<nav class="mt-12 flex justify-between border-t border-rule pt-5 font-serif text-lg">
   {# with sort_by = "date", `higher` is the older digest and `lower` the newer one #}
   {% if page.higher %}
-    <a href="{{ page.higher.permalink }}" class="text-sky-700 hover:underline dark:text-sky-400">← {{ page.higher.date | date(format="%b %-d") }}</a>
+    <a href="{{ page.higher.permalink }}" class="text-muted transition-colors hover:text-accent">← {{ page.higher.date | date(format="%B %-d") }}</a>
   {% else %}<span></span>{% endif %}
   {% if page.lower %}
-    <a href="{{ page.lower.permalink }}" class="text-sky-700 hover:underline dark:text-sky-400">{{ page.lower.date | date(format="%b %-d") }} →</a>
+    <a href="{{ page.lower.permalink }}" class="text-muted transition-colors hover:text-accent">{{ page.lower.date | date(format="%B %-d") }} →</a>
   {% endif %}
 </nav>
 {% endcomponent digest %}
