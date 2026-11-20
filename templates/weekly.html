@@ -36,7 +36,7 @@
   <div class="term-stories">
   {% for item in theme.items %}
     {% set backlink = trans(key="from_edition", lang=lang) | replace(from="{date}", to=item.edition | date(format=short, locale=locale)) %}
-    {{<item_card item={item} lang={lang} key={item.key} label={item.label} category={item.category} permalink={get_url(path="@/digest/" ~ item.edition ~ ".md")} backlink={backlink} />}}
+    {{<item_card item={item} lang={lang} key={item.key} label={item.label} category={item.category} permalink={get_url(path="@/digest/" ~ item.edition ~ ".md")} backlink={backlink} with_image={loop.first} />}}
   {% endfor %}
   </div>
 </section>

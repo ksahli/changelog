@@ -19,7 +19,7 @@
 {#- One story. -#}
 {#- `permalink` is the edition the story belongs to; `backlink` (optional) is the
     text of a link back to the story in that edition, used outside the edition page. -#}
-{% component item_card(item, lang, key, label, category, permalink, backlink="") %}
+{% component item_card(item, lang, key, label, category, permalink, backlink="", with_image=false) %}
 <article class="story" id="{{ key }}">
   <header class="story-head">
     <span class="story-meta">
@@ -29,6 +29,13 @@
     <span class="story-title">{{ item.title }}</span>
     <a class="story-anchor" href="{{ permalink }}#{{ key }}" title="{{ trans(key='permalink', lang=lang) }}" aria-label="{{ trans(key='permalink', lang=lang) }}" data-copied="{{ trans(key='copied', lang=lang) }}">¶</a>
   </header>
+  {%- if with_image and item.image %}
+  {#- Halftone of the publisher's own image (scripts/images.py); the headline is right above, so alt is empty. -#}
+  <figure class="story-figure">
+    <img src="{{ get_url(path=item.image.src) }}" width="{{ item.image.width }}" height="{{ item.image.height }}" alt="" loading="lazy" decoding="async">
+    <figcaption>{{ trans(key="photo", lang=lang) | split(pat="{source}") | first }}<a href="{{ item.image.url }}" rel="noopener" target="_blank">{{ item.image.credit }}</a>{{ trans(key="photo", lang=lang) | split(pat="{source}") | last }}</figcaption>
+  </figure>
+  {%- endif %}
   <div class="story-body">
     <p class="story-summary">{{ item.summary }}</p>
     <p class="story-why"><span class="story-why-label">{{ trans(key="why_it_matters", lang=lang) }}</span> {{ item.why_it_matters }}</p>
@@ -117,7 +124,7 @@
   {% if lead_key != "" %}
   <section id="lead">
   {% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
-    {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} category={cat} permalink={page.permalink} />}}{% endif %}
+    {% if page.slug ~ "-" ~ cat ~ "-" ~ loop.index == lead_key %}{{<item_card item={item} lang={lang} key={lead_key} label={label} category={cat} permalink={page.permalink} with_image={true} />}}{% endif %}
   {% endfor %}{% endfor %}
   </section>
   {% endif %}
@@ -135,7 +142,7 @@
   <div id="stories">
   {% for section in page.extra.sections %}{% set cat = section.category %}{% set label = section.label %}{% for item in section.items %}
     {% set key = page.slug ~ "-" ~ cat ~ "-" ~ loop.index %}
-    {% if key != lead_key %}{{<item_card item={item} lang={lang} key={key} label={label} category={cat} permalink={page.permalink} />}}{% endif %}
+    {% if key != lead_key %}{{<item_card item={item} lang={lang} key={key} label={label} category={cat} permalink={page.permalink} with_image={true} />}}{% endif %}
   {% endfor %}{% endfor %}
   </div>
   <p class="py-4 text-center text-sm italic text-muted" data-no-results hidden>{{ trans(key="no_results", lang=lang) }}</p>

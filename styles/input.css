@@ -119,6 +119,24 @@
   /* Tag cloud: size grows with the number of editions using the tag. */
   .tag-cloud a { font-size: calc(14px + min(var(--n), 12) * 1.5px); }
 
+  /* Pictures: halftones printed on a paper-colored plate. In dark mode the plate keeps
+     its paper color, dimmed, like a clipping on a dark desk rather than a negative. */
+  .story-figure { margin-top: .7rem; break-inside: avoid; }
+  .story-figure img {
+    display: block; width: 100%; height: auto; background: #efe6d2; mix-blend-mode: multiply;
+    border: 1px solid var(--ink);
+  }
+  .story-figure figcaption {
+    padding-top: .25rem; text-align: right; font-size: 11px; font-style: italic; color: var(--muted);
+  }
+  .story-figure figcaption a { text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 2px; }
+  .story-figure figcaption a:hover { color: var(--accent); }
+  :root[data-theme="dark"] .story-figure img { mix-blend-mode: normal; filter: sepia(.3) brightness(.8); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .story-figure img { mix-blend-mode: normal; filter: sepia(.3) brightness(.8); }
+  }
+  #lead .story-figure { margin-top: 1.1rem; }
+
   /* Everything else: newspaper columns. */
   #stories { columns: 17rem 3; column-gap: 2.25rem; column-rule: 1px solid var(--rule); }
 

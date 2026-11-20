@@ -67,6 +67,7 @@ weekly_stats = "{items} stories picked from {candidates} across {editions} editi
 weekly_banner = "The week in review is out"
 permalink = "Link to this story (click to copy)"
 copied = "Link copied"
+photo = "Photo: {source}"
 tagged = "Stories tagged #{tag}"
 categories = "Sections"
 from_edition = "From the {date} edition"

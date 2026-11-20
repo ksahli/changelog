@@ -4,11 +4,13 @@
 Usage:
     python scripts/digest.py [--force] [--dry-run] [--date YYYY-MM-DD]
     python scripts/digest.py --refresh-front-matter
+    python scripts/digest.py --images-only [--date YYYY-MM-DD]
 
 Env:
     ANTHROPIC_API_KEY   required (except with --fetch-only)
     DIGEST_MODEL        optional, defaults to claude-opus-5-5
     DIGEST_EFFORT       optional, low|medium|high (default medium)
+    DIGEST_IMAGES       optional, set to 0 to skip story pictures
 """
 
 from __future__ import annotations
@@ -23,17 +25,23 @@ import sys
 import tomllib
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 import feedparser
 import httpx
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import images  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "scripts" / "sources.toml"
 DIGEST_DIR = ROOT / "content" / "digest"
+IMAGE_DIR = ROOT / "static" / "img" / "digest"
 
 MODEL = os.environ.get("DIGEST_MODEL") or "claude-opus-5-5"
 EFFORT = os.environ.get("DIGEST_EFFORT") or "medium"
+WITH_IMAGES = os.environ.get("DIGEST_IMAGES", "1") != "0"
+LEAD_WIDTH, COLUMN_WIDTH = 1200, 640
 WINDOW = timedelta(hours=26)
 MAX_CANDIDATES = 300
 SNIPPET_LEN = 400
@@ -110,16 +118,18 @@ async def fetch_feed(client: httpx.AsyncClient, feed: dict, since: datetime) -> 
             # Undated entries are usually evergreen pages; skip them.
             continue
         snippet = strip_html(entry.get("summary", "") or entry.get("description", ""))
-        items.append(
-            {
-                "title": title,
-                "link": link,
-                "source": feed["name"],
-                "category": feed["category"],
-                "published": published.isoformat(timespec="minutes"),
-                "snippet": snippet[:SNIPPET_LEN],
-            }
-        )
+        item = {
+            "title": title,
+            "link": link,
+            "source": feed["name"],
+            "category": feed["category"],
+            "published": published.isoformat(timespec="minutes"),
+            "snippet": snippet[:SNIPPET_LEN],
+        }
+        image = feed.get("images", True) and images.feed_image(entry)
+        if image:
+            item["image"] = urljoin(link, image)
+        items.append(item)
     log(f"  - {feed['name']}: {len(items)} recent")
     return items
 
@@ -286,7 +296,8 @@ def call_claude(system: str, schema: dict, content: str) -> dict:
 
 
 def ask_claude(candidates: list[dict], today: date) -> dict:
-    payload = json.dumps(candidates, ensure_ascii=False)
+    # Image URLs are only for us; they would cost tokens and tell Claude nothing.
+    payload = json.dumps([{k: v for k, v in c.items() if k != "image"} for c in candidates], ensure_ascii=False)
     vocabulary = recent_tags(today)
     # Reusing earlier tags keeps the tag pages from splintering (rce vs remote-code-execution).
     tags_hint = (
@@ -341,6 +352,79 @@ def normalize_tags(tags: list[str]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Pictures
+# ---------------------------------------------------------------------------
+
+SECTION_TRIES = 3  # stories per section that may supply its picture
+
+
+def picture_slots(sections: list[dict], day: date) -> list[tuple[bool, list[tuple[str, dict]]]]:
+    """Where pictures go: the lead (the first high-importance story, as in the
+    template), then one per remaining section. A slot lists (anchor key, item)
+    in order of preference; the first story with a usable image gets the picture."""
+    keyed = [[(f"{day}-{s['category']}-{n}", item) for n, item in enumerate(s["items"], start=1)] for s in sections]
+    lead_at = next(((si, ii) for si, s in enumerate(sections)
+                    for ii, item in enumerate(s["items"]) if item.get("importance") == "high"), None)
+    slots = []
+    if lead_at:
+        slots.append((True, [keyed[lead_at[0]][lead_at[1]]]))
+    for si, stories in enumerate(keyed):
+        if lead_at and si == lead_at[0]:
+            continue
+        slots.append((False, stories[:SECTION_TRIES]))
+    return slots
+
+
+def find_picture(client: httpx.Client, item: dict, feed_images: dict[str, str], opted_out: set[str]):
+    """(image, link) from the first of the story's links with a usable image, else (None, reason)."""
+    why = "no image found"
+    for link in item["links"]:
+        if link.get("source") in opted_out:
+            continue
+        url = feed_images.get(canonical_url(link["url"])) or images.page_image(client, link["url"])
+        if not url:
+            continue
+        img, why = images.download(client, url)
+        if img:
+            return img, link
+    return None, why
+
+
+def attach_images(sections: list[dict], day: date, feed_images: dict[str, str]) -> None:
+    """Give each picture slot a halftone of the publisher's image, when one is usable.
+    feed_images maps canonical article URLs to the image their feed entry carried."""
+    opted_out = {f["name"] for f in tomllib.loads(SOURCES.read_text(encoding="utf-8"))["feed"]
+                 if f.get("images") is False}
+    out_dir = IMAGE_DIR / day.isoformat()
+    headers = {"User-Agent": USER_AGENT}
+    with httpx.Client(headers=headers, timeout=20, follow_redirects=True) as client:
+        for is_lead, stories in picture_slots(sections, day):
+            if any(item.get("image") and (ROOT / "static" / item["image"]["src"]).exists() for _, item in stories):
+                continue
+            for key, item in stories:
+                img, found = find_picture(client, item, feed_images, opted_out)
+                if img is None:
+                    log(f"  - {key}: no picture ({found})")
+                    continue
+                width = LEAD_WIDTH if is_lead else COLUMN_WIDTH
+                screened = images.halftone(img, width, cell=7 if is_lead else 5)
+                out_dir.mkdir(parents=True, exist_ok=True)
+                path = out_dir / f"{key}.png"
+                # Four gray levels keep the dots' anti-aliased edges at a third of a WebP's size.
+                screened.quantize(4).save(path, "PNG", optimize=True)
+                item["image"] = {
+                    "src": str(path.relative_to(ROOT / "static")),
+                    "width": screened.width,
+                    "height": screened.height,
+                    # The article's site, not the feed's name: "Lobsters" or "Hacker News" only linked it.
+                    "credit": urlsplit(found["url"]).netloc.removeprefix("www."),
+                    "url": found["url"],
+                }
+                log(f"  + {key}: {item['image']['credit']} ({path.stat().st_size // 1024} KB)")
+                break
+
+
+# ---------------------------------------------------------------------------
 # Output
 # ---------------------------------------------------------------------------
 
@@ -368,6 +452,20 @@ def render_page(digest: dict, today: date, stats: dict, model: str = MODEL) -> s
     return f"---\n{json.dumps(front, ensure_ascii=False, indent=1)}\n---\n\n{body}\n"
 
 
+def add_images_to(day: date) -> int:
+    """Add pictures to an existing digest, from its links' og:image (no feed data, no API call)."""
+    path = DIGEST_DIR / f"{day}.md"
+    if not path.exists():
+        log(f"{path.relative_to(ROOT)} does not exist")
+        return 1
+    extra = read_front_matter(path)["extra"]
+    attach_images(extra["sections"], day, {})
+    digest = {"tldr": extra.get("tldr", []), "sections": extra["sections"]}
+    path.write_text(render_page(digest, day, extra.get("stats", {}), extra.get("model", MODEL)), encoding="utf-8")
+    log(f"Updated {path.relative_to(ROOT)}")
+    return 0
+
+
 def refresh_front_matter() -> None:
     """Re-render every digest from its own data (normalized tags, taxonomies). No API call."""
     for path in sorted(DIGEST_DIR.glob("????-??-??.md")):
@@ -389,6 +487,8 @@ def main() -> int:
     parser.add_argument("--fetch-only", action="store_true", help="only fetch feeds and print candidates")
     parser.add_argument("--refresh-front-matter", action="store_true",
                         help="re-render existing digests' front matter (tags, taxonomies) without calling Claude")
+    parser.add_argument("--images-only", action="store_true",
+                        help="add pictures to the existing digest for --date (no API call)")
     parser.add_argument("--date", type=date.fromisoformat, default=datetime.now(timezone.utc).date())
     args = parser.parse_args()
 
@@ -397,6 +497,8 @@ def main() -> int:
         return 0
 
     today: date = args.date
+    if args.images_only:
+        return add_images_to(today)
     out_path = DIGEST_DIR / f"{today}.md"
     if out_path.exists() and not (args.force or args.dry_run or args.fetch_only):
         log(f"{out_path.relative_to(ROOT)} already exists; use --force to regenerate")
@@ -420,6 +522,11 @@ def main() -> int:
     if args.dry_run:
         print(json.dumps(digest, ensure_ascii=False, indent=2))
         return 0
+
+    if WITH_IMAGES:
+        log("Picking pictures…")
+        feed_images = {canonical_url(c["link"]): c["image"] for c in candidates if c.get("image")}
+        attach_images(digest["sections"], today, feed_images)
 
     n_items = sum(len(s["items"]) for s in digest["sections"])
     stats = {"items": n_items, "candidates": len(candidates), "sources": len(feeds)}
