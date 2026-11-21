@@ -33,7 +33,7 @@
   {#- Black-and-white photo of the publisher's own image (scripts/images.py); the headline is right above, so alt is empty.
       The title length just staggers the drift so pictures don't move in step. -#}
   <figure class="story-figure">
-    <span class="story-plate" style="--drift-delay: -{{ item.title | length % 9 * 5 }}s"><img src="{{ get_url(path=item.image.src) }}" width="{{ item.image.width }}" height="{{ item.image.height }}" alt="" loading="lazy" decoding="async"></span>
+    <span class="story-plate" style="--drift-delay: -{{ item.title | length % 9 * 2 }}s"><img src="{{ get_url(path=item.image.src) }}" width="{{ item.image.width }}" height="{{ item.image.height }}" alt="" loading="lazy" decoding="async"></span>
     <figcaption>{{ trans(key="photo", lang=lang) | split(pat="{source}") | first }}<a href="{{ item.image.url }}" rel="noopener" target="_blank">{{ item.image.credit }}</a>{{ trans(key="photo", lang=lang) | split(pat="{source}") | last }}</figcaption>
   </figure>
   {%- endif %}

@@ -119,11 +119,24 @@
   /* Tag cloud: size grows with the number of editions using the tag. */
   .tag-cloud a { font-size: calc(14px + min(var(--n), 12) * 1.5px); }
 
-  /* Pictures: clean black-and-white photos in a hairline frame, drifting slowly
-     (a Ken Burns pan and zoom, each out of step with the others via --drift-delay). */
+  /* Pictures: black-and-white photos toned in the page's paper color, in a hairline frame,
+     drifting (a Ken Burns pan and zoom, each out of step with the others via --drift-delay).
+     The tint is a fixed overlay on the plate (color blend: the photo's luminance, the paper's hue);
+     in light mode the photo also multiplies onto the paper, so its whites are the page itself. */
   .story-figure { margin-top: .7rem; break-inside: avoid; }
-  .story-plate { display: block; overflow: hidden; border: 1px solid var(--rule); }
-  .story-figure img { display: block; width: 100%; height: auto; filter: grayscale(1); }
+  .story-plate {
+    position: relative; display: block; overflow: hidden; isolation: isolate;
+    border: 1px solid var(--rule); background: var(--paper);
+  }
+  .story-plate::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: var(--paper); mix-blend-mode: color;
+  }
+  .story-figure img { display: block; width: 100%; height: auto; filter: grayscale(1); mix-blend-mode: multiply; }
+  :root[data-theme="dark"] .story-figure img { mix-blend-mode: normal; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .story-figure img { mix-blend-mode: normal; }
+  }
   .story-figure figcaption {
     padding-top: .25rem; text-align: right; font-size: 11px; font-style: italic; color: var(--muted);
   }
@@ -134,12 +147,13 @@
     :root:not([data-theme="light"]) .story-figure img { filter: grayscale(1) brightness(.85) contrast(1.05); }
   }
   @keyframes drift {
-    from { transform: scale(1.04) translate(-1%, .5%); }
-    to { transform: scale(1.1) translate(1.2%, -.8%); }
+    /* Scale stays >= 1.06, so the pan never shows the plate's edges. */
+    from { transform: scale(1.06) translate(-2.5%, 1.5%); }
+    to { transform: scale(1.18) translate(2.5%, -2%); }
   }
   @media (prefers-reduced-motion: no-preference) {
     .story-figure img {
-      animation: drift 40s ease-in-out var(--drift-delay, 0s) infinite alternate;
+      animation: drift 18s ease-in-out var(--drift-delay, 0s) infinite alternate;
       will-change: transform;
     }
   }
