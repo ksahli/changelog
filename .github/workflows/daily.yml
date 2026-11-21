@@ -2,7 +2,11 @@ name: Daily digest
 
 on:
   schedule:
-    - cron: "0 6 * * *" # 06:00 UTC every day
+    # GitHub's scheduler is best-effort: runs at the top of the hour are often
+    # delayed for hours or dropped. Use off-peak minutes, plus a later fallback
+    # (digest.py and weekly.py skip a date that already exists).
+    - cron: "23 5 * * *" # 05:23 UTC
+    - cron: "47 9 * * *" # 09:47 UTC fallback
   workflow_dispatch:
     inputs:
       force:
