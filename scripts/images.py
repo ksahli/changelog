@@ -110,6 +110,20 @@ def download(client: httpx.Client, url: str) -> tuple[Image.Image | None, str]:
     return img.convert("RGB"), ""
 
 
+def _tone(img: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """Crop to size, grayscale, stretch and sharpen, then lift the midtones:
+    printed dots spread ("dot gain"), and photos for the web skew dark."""
+    gray = ImageOps.fit(img.convert("L"), size, Image.Resampling.LANCZOS)
+    gray = ImageOps.autocontrast(gray, cutoff=1).filter(ImageFilter.UnsharpMask(radius=2, percent=80))
+    return gray.point([round(255 * (v / 255) ** GAMMA) for v in range(256)])
+
+
+def prepare(img: Image.Image, width: int, aspect: float = 3 / 2) -> Image.Image:
+    """The toned grayscale picture before screening: the source static/js/motion.js
+    screens live in the browser, so its dots match the static halftone."""
+    return _tone(img, (width, round(width / aspect)))
+
+
 def halftone(img: Image.Image, width: int, aspect: float = 3 / 2, cell: int = 6) -> Image.Image:
     """A 45° dot screen: black dots on white, sized by the darkness under them."""
     ss = 2  # supersample, then downscale for smooth dots
@@ -117,10 +131,7 @@ def halftone(img: Image.Image, width: int, aspect: float = 3 / 2, cell: int = 6)
     W, H, c = width * ss, height * ss, cell * ss
 
     pad = 3 * c  # screen a margin too, so the rotated grid never samples the fill color at the edges
-    gray = ImageOps.fit(img.convert("L"), (W, H), Image.Resampling.LANCZOS)
-    gray = ImageOps.autocontrast(gray, cutoff=1).filter(ImageFilter.UnsharpMask(radius=2, percent=80))
-    # Lift the midtones: printed dots spread ("dot gain"), and photos for the web skew dark.
-    gray = gray.point([round(255 * (v / 255) ** GAMMA) for v in range(256)])
+    gray = _tone(img, (W, H))
     framed = Image.new("L", (W + 2 * pad, H + 2 * pad))
     framed.paste(gray.resize((W + 2 * pad, H + 2 * pad), Image.Resampling.BICUBIC))
     framed.paste(gray, (pad, pad))

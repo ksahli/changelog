@@ -386,11 +386,11 @@ def find_picture(client: httpx.Client, item: dict, feed_images: dict[str, str], 
             continue
         img, why = images.download(client, url)
         if img:
-            return img, link
+            return img, (link, url)
     return None, why
 
 
-def attach_images(sections: list[dict], day: date, feed_images: dict[str, str]) -> None:
+def attach_images(sections: list[dict], day: date, feed_images: dict[str, str], redo: bool = False) -> None:
     """Give each picture slot a halftone of the publisher's image, when one is usable.
     feed_images maps canonical article URLs to the image their feed entry carried."""
     opted_out = {f["name"] for f in tomllib.loads(SOURCES.read_text(encoding="utf-8"))["feed"]
@@ -399,28 +399,39 @@ def attach_images(sections: list[dict], day: date, feed_images: dict[str, str]) 
     headers = {"User-Agent": USER_AGENT}
     with httpx.Client(headers=headers, timeout=20, follow_redirects=True) as client:
         for is_lead, stories in picture_slots(sections, day):
-            if any(item.get("image") and (ROOT / "static" / item["image"]["src"]).exists() for _, item in stories):
+            if redo:
+                for _, item in stories:
+                    item.pop("image", None)
+            elif any(item.get("image") and (ROOT / "static" / item["image"]["src"]).exists() for _, item in stories):
                 continue
             for key, item in stories:
                 img, found = find_picture(client, item, feed_images, opted_out)
                 if img is None:
                     log(f"  - {key}: no picture ({found})")
                     continue
-                width = LEAD_WIDTH if is_lead else COLUMN_WIDTH
-                screened = images.halftone(img, width, cell=7 if is_lead else 5)
+                link, source = found
+                width, cell = (LEAD_WIDTH, 7) if is_lead else (COLUMN_WIDTH, 5)
+                screened = images.halftone(img, width, cell=cell)
                 out_dir.mkdir(parents=True, exist_ok=True)
                 path = out_dir / f"{key}.png"
                 # Four gray levels keep the dots' anti-aliased edges at a third of a WebP's size.
                 screened.quantize(4).save(path, "PNG", optimize=True)
+                # The unscreened picture, for the moving halftone drawn by static/js/motion.js.
+                gray = out_dir / f"{key}.jpg"
+                images.prepare(img, width).save(gray, "JPEG", quality=72, optimize=True, progressive=True)
                 item["image"] = {
                     "src": str(path.relative_to(ROOT / "static")),
+                    "gray": str(gray.relative_to(ROOT / "static")),
                     "width": screened.width,
                     "height": screened.height,
+                    "cell": cell,
                     # The article's site, not the feed's name: "Lobsters" or "Hacker News" only linked it.
-                    "credit": urlsplit(found["url"]).netloc.removeprefix("www."),
-                    "url": found["url"],
+                    "credit": urlsplit(link["url"]).netloc.removeprefix("www."),
+                    "url": link["url"],
+                    "source": source,
                 }
-                log(f"  + {key}: {item['image']['credit']} ({path.stat().st_size // 1024} KB)")
+                log(f"  + {key}: {item['image']['credit']} ({path.stat().st_size // 1024} KB png, "
+                    f"{gray.stat().st_size // 1024} KB jpg)")
                 break
 
 
@@ -452,14 +463,14 @@ def render_page(digest: dict, today: date, stats: dict, model: str = MODEL) -> s
     return f"---\n{json.dumps(front, ensure_ascii=False, indent=1)}\n---\n\n{body}\n"
 
 
-def add_images_to(day: date) -> int:
+def add_images_to(day: date, redo: bool = False) -> int:
     """Add pictures to an existing digest, from its links' og:image (no feed data, no API call)."""
     path = DIGEST_DIR / f"{day}.md"
     if not path.exists():
         log(f"{path.relative_to(ROOT)} does not exist")
         return 1
     extra = read_front_matter(path)["extra"]
-    attach_images(extra["sections"], day, {})
+    attach_images(extra["sections"], day, {}, redo=redo)
     digest = {"tldr": extra.get("tldr", []), "sections": extra["sections"]}
     path.write_text(render_page(digest, day, extra.get("stats", {}), extra.get("model", MODEL)), encoding="utf-8")
     log(f"Updated {path.relative_to(ROOT)}")
@@ -489,6 +500,8 @@ def main() -> int:
                         help="re-render existing digests' front matter (tags, taxonomies) without calling Claude")
     parser.add_argument("--images-only", action="store_true",
                         help="add pictures to the existing digest for --date (no API call)")
+    parser.add_argument("--redo", action="store_true",
+                        help="with --images-only: rebuild pictures that already exist")
     parser.add_argument("--date", type=date.fromisoformat, default=datetime.now(timezone.utc).date())
     args = parser.parse_args()
 
@@ -498,7 +511,7 @@ def main() -> int:
 
     today: date = args.date
     if args.images_only:
-        return add_images_to(today)
+        return add_images_to(today, redo=args.redo)
     out_path = DIGEST_DIR / f"{today}.md"
     if out_path.exists() and not (args.force or args.dry_run or args.fetch_only):
         log(f"{out_path.relative_to(ROOT)} already exists; use --force to regenerate")

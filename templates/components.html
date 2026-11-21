@@ -32,7 +32,8 @@
   {%- if with_image and item.image %}
   {#- Halftone of the publisher's own image (scripts/images.py); the headline is right above, so alt is empty. -#}
   <figure class="story-figure">
-    <img src="{{ get_url(path=item.image.src) }}" width="{{ item.image.width }}" height="{{ item.image.height }}" alt="" loading="lazy" decoding="async">
+    <span class="story-plate"><img src="{{ get_url(path=item.image.src) }}" width="{{ item.image.width }}" height="{{ item.image.height }}" alt="" loading="lazy" decoding="async"
+      {%- if item.image.gray %} data-gray="{{ get_url(path=item.image.gray) }}" data-cell="{{ item.image.cell }}" data-seed="{{ key }}"{% endif %}></span>
     <figcaption>{{ trans(key="photo", lang=lang) | split(pat="{source}") | first }}<a href="{{ item.image.url }}" rel="noopener" target="_blank">{{ item.image.credit }}</a>{{ trans(key="photo", lang=lang) | split(pat="{source}") | last }}</figcaption>
   </figure>
   {%- endif %}
