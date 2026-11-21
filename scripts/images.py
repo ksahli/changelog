@@ -1,5 +1,5 @@
-"""Story pictures: find the publisher's image for an article and print it as a
-black-and-white halftone that fits the newspaper look.
+"""Story pictures: find the publisher's image for an article and turn it into a
+clean black-and-white photo.
 
 Nothing here raises on bad input from the network: callers get None and move on.
 """
@@ -8,19 +8,18 @@ from __future__ import annotations
 
 import html
 import io
-import math
 import re
 from urllib.parse import urljoin
 
 import httpx
-from PIL import Image, ImageDraw, ImageFilter, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 MAX_BYTES = 8 * 1024 * 1024
 HTML_BYTES = 300 * 1024
 MIN_WIDTH = 480
 ASPECT_RANGE = (0.6, 2.5)
-GAMMA = 0.62  # < 1 lightens midtones
-MAX_DOT = 0.88  # share of a cell's diagonal the darkest dot may cover
+CONTRAST = 0.25  # S-curve strength: 0 is flat, 1 is a full smoothstep
+S_CURVE = [round(255 * (x + CONTRAST * (x * x * (3 - 2 * x) - x))) for x in (v / 255 for v in range(256))]
 
 IMG_TAG = re.compile(r"<img[^>]+src=[\"']([^\"']+)", re.I)
 META_TAG = re.compile(r"<meta\b[^>]*>", re.I)
@@ -110,49 +109,11 @@ def download(client: httpx.Client, url: str) -> tuple[Image.Image | None, str]:
     return img.convert("RGB"), ""
 
 
-def _tone(img: Image.Image, size: tuple[int, int]) -> Image.Image:
-    """Crop to size, grayscale, stretch and sharpen, then lift the midtones:
-    printed dots spread ("dot gain"), and photos for the web skew dark."""
+def photo(img: Image.Image, width: int, aspect: float = 3 / 2) -> Image.Image:
+    """A crisp black-and-white photo: crop to size, grayscale, stretch the
+    contrast, sharpen lightly, then a gentle S-curve for depth."""
+    size = (width, round(width / aspect))
     gray = ImageOps.fit(img.convert("L"), size, Image.Resampling.LANCZOS)
-    gray = ImageOps.autocontrast(gray, cutoff=1).filter(ImageFilter.UnsharpMask(radius=2, percent=80))
-    return gray.point([round(255 * (v / 255) ** GAMMA) for v in range(256)])
-
-
-def prepare(img: Image.Image, width: int, aspect: float = 3 / 2) -> Image.Image:
-    """The toned grayscale picture before screening: the source static/js/motion.js
-    screens live in the browser, so its dots match the static halftone."""
-    return _tone(img, (width, round(width / aspect)))
-
-
-def halftone(img: Image.Image, width: int, aspect: float = 3 / 2, cell: int = 6) -> Image.Image:
-    """A 45° dot screen: black dots on white, sized by the darkness under them."""
-    ss = 2  # supersample, then downscale for smooth dots
-    height = round(width / aspect)
-    W, H, c = width * ss, height * ss, cell * ss
-
-    pad = 3 * c  # screen a margin too, so the rotated grid never samples the fill color at the edges
-    gray = _tone(img, (W, H))
-    framed = Image.new("L", (W + 2 * pad, H + 2 * pad))
-    framed.paste(gray.resize((W + 2 * pad, H + 2 * pad), Image.Resampling.BICUBIC))
-    framed.paste(gray, (pad, pad))
-    gray = framed
-
-    rotated = gray.rotate(45, expand=True, fillcolor=255, resample=Image.Resampling.BICUBIC)
-    cols, rows = math.ceil(rotated.width / c), math.ceil(rotated.height / c)
-    means = rotated.resize((cols, rows), Image.Resampling.BOX).load()
-
-    screen = Image.new("L", rotated.size, 255)
-    draw = ImageDraw.Draw(screen)
-    full = c / math.sqrt(2) * MAX_DOT  # MAX_DOT = 1 would let the darkest dots merge into solid black
-    for j in range(rows):
-        for i in range(cols):
-            darkness = 1 - means[i, j] / 255
-            r = full * math.sqrt(darkness)
-            if r < 0.6:
-                continue
-            x, y = i * c + c / 2, j * c + c / 2
-            draw.ellipse((x - r, y - r, x + r, y + r), fill=0)
-
-    back = screen.rotate(-45, fillcolor=255, resample=Image.Resampling.BICUBIC)
-    left, top = (back.width - W) // 2, (back.height - H) // 2  # drops the padding too
-    return back.crop((left, top, left + W, top + H)).resize((width, height), Image.Resampling.LANCZOS)
+    gray = ImageOps.autocontrast(gray, cutoff=0.5)
+    gray = gray.filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))
+    return gray.point(S_CURVE)

@@ -391,7 +391,7 @@ def find_picture(client: httpx.Client, item: dict, feed_images: dict[str, str], 
 
 
 def attach_images(sections: list[dict], day: date, feed_images: dict[str, str], redo: bool = False) -> None:
-    """Give each picture slot a halftone of the publisher's image, when one is usable.
+    """Give each picture slot a black-and-white photo from the publisher's image, when one is usable.
     feed_images maps canonical article URLs to the image their feed entry carried."""
     opted_out = {f["name"] for f in tomllib.loads(SOURCES.read_text(encoding="utf-8"))["feed"]
                  if f.get("images") is False}
@@ -410,28 +410,21 @@ def attach_images(sections: list[dict], day: date, feed_images: dict[str, str], 
                     log(f"  - {key}: no picture ({found})")
                     continue
                 link, source = found
-                width, cell = (LEAD_WIDTH, 7) if is_lead else (COLUMN_WIDTH, 5)
-                screened = images.halftone(img, width, cell=cell)
+                width = LEAD_WIDTH if is_lead else COLUMN_WIDTH
+                picture = images.photo(img, width)
                 out_dir.mkdir(parents=True, exist_ok=True)
-                path = out_dir / f"{key}.png"
-                # Four gray levels keep the dots' anti-aliased edges at a third of a WebP's size.
-                screened.quantize(4).save(path, "PNG", optimize=True)
-                # The unscreened picture, for the moving halftone drawn by static/js/motion.js.
-                gray = out_dir / f"{key}.jpg"
-                images.prepare(img, width).save(gray, "JPEG", quality=72, optimize=True, progressive=True)
+                path = out_dir / f"{key}.jpg"
+                picture.save(path, "JPEG", quality=82, optimize=True, progressive=True)
                 item["image"] = {
                     "src": str(path.relative_to(ROOT / "static")),
-                    "gray": str(gray.relative_to(ROOT / "static")),
-                    "width": screened.width,
-                    "height": screened.height,
-                    "cell": cell,
+                    "width": picture.width,
+                    "height": picture.height,
                     # The article's site, not the feed's name: "Lobsters" or "Hacker News" only linked it.
                     "credit": urlsplit(link["url"]).netloc.removeprefix("www."),
                     "url": link["url"],
                     "source": source,
                 }
-                log(f"  + {key}: {item['image']['credit']} ({path.stat().st_size // 1024} KB png, "
-                    f"{gray.stat().st_size // 1024} KB jpg)")
+                log(f"  + {key}: {item['image']['credit']} ({path.stat().st_size // 1024} KB)")
                 break
 
 
