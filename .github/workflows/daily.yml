@@ -3,8 +3,9 @@ name: Daily digest
 on:
   schedule:
     # GitHub's scheduler is best-effort: any single run can be delayed for
-    # hours or dropped (both 05:23 and the old 09:47 fallback were skipped on
-    # 2026-11-22). So try several times a day at off-peak minutes. The first
+    # hours or dropped (06:00 ran 9 hours late on 2026-11-20 and was skipped on
+    # 11-21; 05:23 was skipped on 11-22). So try several times a day at
+    # off-peak minutes. The first
     # run that succeeds publishes; later ones see today's digest already
     # exists and stop after a few seconds, without rebuilding the site.
     - cron: "23 5 * * *" # 05:23 UTC
