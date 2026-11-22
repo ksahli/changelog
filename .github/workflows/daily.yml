@@ -2,11 +2,19 @@ name: Daily digest
 
 on:
   schedule:
-    # GitHub's scheduler is best-effort: runs at the top of the hour are often
-    # delayed for hours or dropped. Use off-peak minutes, plus a later fallback
-    # (digest.py and weekly.py skip a date that already exists).
+    # GitHub's scheduler is best-effort: any single run can be delayed for
+    # hours or dropped (06:00 ran 9 hours late on 2026-11-20 and was skipped on
+    # 11-21; 05:23 was skipped on 11-22). So try several times a day at
+    # off-peak minutes. The first
+    # run that succeeds publishes; later ones see today's digest already
+    # exists and stop after a few seconds, without rebuilding the site.
     - cron: "23 5 * * *" # 05:23 UTC
-    - cron: "47 9 * * *" # 09:47 UTC fallback
+    - cron: "41 6 * * *" # 06:41 UTC retry
+    - cron: "53 7 * * *" # 07:53 UTC retry
+    - cron: "17 9 * * *" # 09:17 UTC retry
+    - cron: "37 11 * * *" # 11:37 UTC retry
+    - cron: "13 14 * * *" # 14:13 UTC retry
+    - cron: "29 18 * * *" # 18:29 UTC retry
   workflow_dispatch:
     inputs:
       force:
@@ -38,18 +46,38 @@ jobs:
     # A push only rebuilds the site; scheduled/manual runs fetch news first.
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.commit.outputs.published }}
     steps:
       - uses: actions/checkout@v5
 
+      # A scheduled retry has nothing to do once today's digest (and, on
+      # Mondays, last week's roundup) is in the repo.
+      - name: Check for missing pages
+        id: check
+        run: |
+          needed=false
+          [ -f "content/digest/$(date -u +%F).md" ] || needed=true
+          if [ "$(date -u +%u)" = 1 ]; then
+            week=$(python3 -c 'from datetime import date, datetime, timedelta, timezone; t = datetime.now(timezone.utc).date(); y, w, _ = (t - timedelta(days=t.weekday() + 7)).isocalendar(); print(f"{y}-W{w:02d}")')
+            [ -f "content/weekly/$week.md" ] || needed=true
+          fi
+          if [ "${{ github.event_name }}" != schedule ]; then needed=true; fi
+          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+          [ "$needed" = true ] || echo "Today's pages already exist; nothing to do"
+
       - uses: actions/setup-python@v6
+        if: steps.check.outputs.needed == 'true'
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: scripts/requirements.txt
 
       - run: pip install -r scripts/requirements.txt
+        if: steps.check.outputs.needed == 'true'
 
       - name: Generate digest
+        if: steps.check.outputs.needed == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DIGEST_MODEL: ${{ vars.DIGEST_MODEL }}
@@ -57,7 +85,7 @@ jobs:
         run: python scripts/digest.py ${{ inputs.force && '--force' || '' }}
 
       - name: Generate weekly roundup
-        if: inputs.weekly || github.event_name == 'schedule'
+        if: steps.check.outputs.needed == 'true' && (inputs.weekly || github.event_name == 'schedule')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DIGEST_MODEL: ${{ vars.DIGEST_MODEL }}
@@ -70,6 +98,8 @@ jobs:
           fi
 
       - name: Commit digest
+        id: commit
+        if: steps.check.outputs.needed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -79,12 +109,16 @@ jobs:
           else
             git commit -m "digest: $(date -u +%F)"
             git push
+            echo "published=true" >> "$GITHUB_OUTPUT"
           fi
 
   build:
     needs: generate
     # Run after a successful generate, or on push when generate is skipped.
-    if: ${{ !failure() && !cancelled() }}
+    # A scheduled run only rebuilds when it published something new.
+    if: >-
+      !failure() && !cancelled() &&
+      (github.event_name != 'schedule' || needs.generate.outputs.published == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
