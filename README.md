@@ -16,7 +16,7 @@ The site has today's digest on the home page, an archive at `/digest/`, weekly r
 2. **Settings → Secrets and variables → Actions**: add the `ANTHROPIC_API_KEY` secret.
    Optional repository variables are `DIGEST_MODEL` (default `claude-opus-5-5`) and `DIGEST_EFFORT` (`low` / `medium` / `high`, default `medium`).
 3. **Settings → Pages → Source**: choose **GitHub Actions**.
-4. **Actions → Daily digest → Run workflow** produces the first digest (tick **weekly** to also build last week's roundup). After that it runs on its own at 06:00 UTC. To change the time, edit the cron line in `.github/workflows/daily.yml`.
+4. **Actions → Daily digest → Run workflow** produces the first digest (tick **weekly** to also build last week's roundup). After that it runs on its own from 05:23 UTC, retrying several times through the day in case GitHub drops a scheduled run; retries stop after a few seconds once the day's digest exists. To change the times, edit the cron lines in `.github/workflows/daily.yml`.
 
 The workflow sets `base_url` from the Pages URL, so `config.toml` doesn't need editing.
 
